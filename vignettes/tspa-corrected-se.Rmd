@@ -1,0 +1,25 @@
+---
+title: "tspa-corrected-se"
+author: "Jimmy Zhang"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{tspa-interaction}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r load packages}
+library(lavaan)
+library(dplyr)
+library(here)
+r_scripts <- list.files(here("R"), pattern = "\\.R$", full.names = TRUE)
+lapply(r_scripts, source)
+```

@@ -112,7 +112,7 @@
 #   return (tspa_fit)
 # }
 
-tspa <- function(model, data, reliability = NULL, se = NULL, ...) {
+tspa_old <- function(model, data, reliability = NULL, se = NULL, ...) {
   if (is.null(reliability) == FALSE){
     stop("tspa() currently does not support reliability model")
   }

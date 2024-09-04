@@ -16,10 +16,135 @@ knitr::opts_chunk$set(
 )
 ```
 
-```{r load packages}
+```{r load packages, include=FALSE}
 library(lavaan)
 library(dplyr)
 library(here)
+library(MASS)
 r_scripts <- list.files(here("R"), pattern = "\\.R$", full.names = TRUE)
 lapply(r_scripts, source)
 ```
+
+```{r data-generating function, echo=FALSE}
+sim_sem_data <- function(n_obs, lambda, phi, theta, beta = NULL, psi = NULL) {
+  n_factors <- ncol(lambda)
+  n_indicators <- nrow(lambda)
+  if (!is.null(beta) && !is.null(psi)) {
+    phi <- solve(diag(n_factors) - beta) %*% psi %*% t(solve(diag(n_factors) - beta))
+  }
+  sigma <- lambda %*% phi %*% t(lambda) + diag(theta)
+  data <- mvrnorm(n = n_obs, mu = rep(0, n_indicators), Sigma = sigma)
+  
+  data <- as.data.frame(data)
+  colnames(data) <- paste0("y", 1:n_indicators)
+  return(data)
+}
+```
+
+```{r simulate data, echo=TRUE}
+set.seed(4443)
+lambda <- matrix(c(0.7, 0.8, 0.9, 0, 0, 0,
+                   0, 0, 0, 0.6, 0.7, 0.8), 
+                 nrow = 6, ncol = 2)
+
+psi <- matrix(c(1, 0, 
+                0, 1), nrow = 2, ncol = 2)
+
+# Define path coefficients between latent factors (e.g., F2 ~ F1)
+beta <- matrix(c(0, 0.8, 
+                 0, 0), nrow = 2, ncol = 2) 
+
+theta <- c(1.3, 1.2, 1.1, 1.25, 1.15, 1.05)
+
+df <- sim_sem_data(n_obs = 500, lambda = lambda, phi = NULL, theta = theta, beta = beta, psi = psi)
+
+# Test the sim data
+mod <- "f1 =~ y1 + y2 + y3
+        f2 =~ y4 + y5 + y6
+        f2 ~ f1"
+summary(sem(mod, df, std.lv = T), standardized = TRUE)
+```
+
+```{r an example for Bartlett scores}
+# Factor score
+tspa_bt <- get_fs(df,
+                  model = "f1 =~ y1 + y2 + y3
+                           f2 =~ y4 + y5 + y6",
+                  method = "Bartlett",
+                  vfsLT = TRUE)
+vfsLT_bt <- attr(tspa_bt, which = "vfsLT") # Sampling covariance matrix of factor score loading and error variance
+
+tspa_bt_fit <- tspa(model = "f2 ~ f1",
+                    data = tspa_bt,
+                    fsT = attr(tspa_bt, "fsT"), # Error variance
+                    fsL = diag(2) |>
+                       `dimnames<-`(list(c("fs_f1", "fs_f2"), # Factor loadings fixed at 1 for Bartlett factor scores
+                                         c("f1", "f2"))))
+
+# Adjusted covariance matrix
+corrected_vcov <- vcov_corrected(
+                      tspa_bt_fit,
+                      # Exclude fixed loadings and error variance
+                      vfsLT = vfsLT_bt[c(5, 7), c(5, 7)],
+                      # Specify which elements are free (error variances only)
+                      which_free = c(5, 7))
+
+# Unadjusted standard errors
+sqrt(diag(vcov(tspa_bt_fit)))
+# Corrected standard errors
+sqrt(diag(corrected_vcov))
+```
+
+This `vcov_corrected function` (by Mark) is designed to correct the covariance matrix of parameter estimates in a 2S-PA model. It accounts for the sampling covariance of the factor score loadings (`fsL`) and the factor score error covariances (`fsT`). This correction is crucial because it adjusts for the additional variance introduced when using estimated factor scores in the structural model. 
+
+```{r decomposition of `vcov_corrected function`, eval=FALSE, include=TRUE}
+# The function extracts the lower triangular part of each fsT matrix (including the diagonal) and stores these elements in a list val_fsT_lower.
+# It then combines (unlists) fsL and the lower triangular parts of fsT into a single vector val_fsLT, which contains all the parameters of interest for correction.
+
+fsL = diag(2) |>
+  `dimnames<-`(list(c("fs_f1", "fs_f2"),
+                    c("f1", "f2")))
+fsT = attr(tspa_bt, "fsT")
+
+val_fsT_lower <- lapply(fsT, function(x) {
+        x[lower.tri(x, diag = TRUE)]
+    })
+val_fsLT <- c(unlist(fsL), unlist(fsT))
+
+# Determining Which Parameters Are Free
+which_free <- c(5, 7)
+
+# Jacobian Matrix Calculation
+# The function calculates the Jacobian matrix (jac) using lavaan::lav_func_jacobian_complex. This matrix captures the partial derivatives of the model parameters with respect to the free parameters in fsL and fsT.
+jac <- lavaan::lav_func_jacobian_complex(
+        function(x) {
+            par <- val_fsLT
+            par[which_free] <- x
+            counter <- 0
+            num_ld <- length(val_fsL[[1]])
+            for (g in seq_len(ngrp)) {
+                val_fsL[[g]][] <- par[(1:num_ld) + counter]
+                counter <- counter + num_ld
+            }
+            num_ev <- sum(lower.tri(val_fsT[[1]], diag = TRUE))
+            for (g in seq_len(ngrp)) {
+                val_fsT[[g]][] <- lavaan::lav_matrix_lower2full(
+                    par[(1:num_ev) + counter]
+                )
+                counter <- counter + num_ev
+            }
+            if (ngrp == 1) {
+                val_fsL <- val_fsL[[1]]
+                val_fsT <- val_fsT[[1]]
+            }
+            lavaan::coef(update_tspa(tspa_fit, fsL = val_fsL, fsT = val_fsT))
+        },
+        x = val_fsLT[which_free],
+    )
+
+# Computing the Corrected Covariance Matrix
+vcov(tspa_fit) + jac %*% vfsLT %*% t(jac)
+```
+
+
+

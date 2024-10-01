@@ -11,21 +11,14 @@ lapply(r_scripts, source)
 
 # Design Factor
 DESIGNFACTOR <- createDesign(
-  N = c(100, 500),
   rel = c(0.7, 0.9),
-  path = c(0, 0.3, 0.6)
-  # num_items = c(3, 10) # Need to change. Now it's hardcoding
-)
+  path = c(0, 0.3, 0.6),
+  N_per_p = c(6, 25, 100), # Sample Size per Indicator
+  n_items = c(5, 10, 20) # Number of Indicator
+) 
 
 # Fixed parameters
 FIXED_PARAMETER <- list(
-  joint_mod = "fy =~ y1 + y2 + y3
-                fx =~ x1 + x2 + x3
-                fy ~ fx",
-  
-  cfa_mod = "fy =~ y1 + y2 + y3
-              fx =~ x1 + x2 + x3",
-  
   rel_mod = "fy =~ NA * fs_fy + ly * fs_fy
               fx =~ NA * fs_fx + lx * fs_fx
               fs_fy ~~ ev1 * fs_fy
@@ -41,43 +34,45 @@ FIXED_PARAMETER <- list(
 
 # ========================================= Data Generation ========================================= #
 
-sim_sem_dat <- function(num_obs, Lambda, Psi, Theta) {
+sim_sem_dat <- function(num_obs, Lambda, Psi, Theta, n_items) {
   eta_delta <- MASS::mvrnorm(
     num_obs,
     mu = rep(0, sum(dim(Lambda))),  
     Sigma = Matrix::bdiag(list(Psi, Theta))  # Block diagonal covariance matrix
   )
-  
   ind <- eta_delta[, 1:2] %*% t(Lambda) + eta_delta[, -(1:2)] # Observed Indicators
-  
   dat <- data.frame(ind)
-  names(dat) <- c(paste0("x", 1:3), paste0("y", 1:3))
+  names(dat) <- c(paste0("x", 1:n_items), paste0("y", 1:n_items))
   return(dat)
 }
 
 # Data Generation Function
 generate_dat <- function (condition, fixed_objects = NULL) {
-  N <- condition$N
+  n_items <- condition$n_items
+  N <- condition$N_per_p * n_items # Sample Size
   rel = condition$rel
   path = condition$path
-  # num_items = condition$num_items
   
   # Model Parameters
-  Alpha <- c(0, 0)
-  Lambda_1 <- c(.8, .5, .6)
-  Lambda_2 <- c(.6, .7, .5)
-  Lambda <- cbind(c(Lambda_1, rep(0, 3)),
-                  c(rep(0, 3), Lambda_2))
+  Alpha <- rep(0, 2)
+  Lambda_1 <- runif(n_items, min = 0.2, max = 0.9)
+  Lambda_2 <- runif(n_items, min = 0.2, max = 0.9)
+  Lambda <- cbind(c(Lambda_1, rep(0, n_items)),
+                  c(rep(0, n_items), Lambda_2))
   Psi <- matrix(c(1, path, 
                   path, 1), 
                 nrow = 2) 
   # Compute error variance
-  Error_1 <- sum(Lambda_1)^2*(1 - rel)/rel*c(0.44, 0.33, 0.23)
-  Error_2 <- sum(Lambda_2)^2*(1 - rel)/rel*c(0.44, 0.33, 0.23)
+  err_prop <- 0.9^(0:(n_items - 1))
+  err_prop <- err_prop / sum(err_prop)
+  Error_1 <- sum(Lambda_1)^2*(1 - rel)/rel*err_prop
+  Error_2 <- sum(Lambda_2)^2*(1 - rel)/rel*err_prop
   Theta <- diag(c(Error_1, Error_2)) 
   
   # Simulate Data
-  sim_sem_dat(num_obs = N, Lambda = Lambda, Psi = Psi, Theta = Theta)
+  sim_sem_dat(num_obs = N, Lambda = Lambda, 
+              Psi = Psi, Theta = Theta,
+              n_items = n_items)
 }
 
 # ========================================= Data Analysis ========================================= #
@@ -139,6 +134,20 @@ compute_std_est <- function(ep, mod, fs) {
   standardizedSolution(sem(mod_tmp, data = fs))$est[6:7]
 }
 
+# Helper Function 5
+syntax_update <- function(n_items, path_include = TRUE) {
+  fy_loadings <- paste0("y", 1:n_items, collapse = " + ")
+  fx_loadings <- paste0("x", 1:n_items, collapse = " + ")
+  lavaan_syntax <- paste0(
+    "fy =~ ", fy_loadings, "\n",
+    "fx =~ ", fx_loadings
+  )
+  if (path_include) {
+    lavaan_syntax <- paste0(lavaan_syntax, "\nfy ~ fx")
+  }
+  return(lavaan_syntax)
+}
+
 # ====== Analyses Function ========= #
 
 # Joint Model
@@ -151,7 +160,7 @@ analyze_joint <- function(condition, dat, fixed_objects) {
   result <- withCallingHandlers(
     {
       # Extract Model
-      joint_mod <- FIXED_PARAMETER$joint_mod
+      joint_mod <- syntax_update(condition$n_items, path_include = TRUE)
       
       # Fit Model
       mjoint <- sem(joint_mod, data = dat)
@@ -186,7 +195,7 @@ analyze_gsam <- function(condition, dat, fixed_objects) {
   result <- withCallingHandlers(
     {
       # Extract Model
-      joint_mod <- FIXED_PARAMETER$joint_mod
+      joint_mod <- syntax_update(condition$n_items, path_include = TRUE)
       
       # Fit Model
       mgsam <- sam(joint_mod, data = dat, sam.method = "global")
@@ -221,7 +230,7 @@ analyze_lsam <- function(condition, dat, fixed_objects) {
   result <- withCallingHandlers(
     {
       # Extract Model
-      joint_mod <- FIXED_PARAMETER$joint_mod
+      joint_mod <- syntax_update(condition$n_items, path_include = TRUE)
       
       # Fit Model
       mlsam <- sam(joint_mod, data = dat)
@@ -256,7 +265,7 @@ analyze_tspa <- function(condition, dat, fixed_objects) {
   result <- withCallingHandlers(
     {
       # Extract Model
-      cfa_mod <- FIXED_PARAMETER$cfa_mod
+      cfa_mod <- syntax_update(condition$n_items, path_include = FALSE)
       
       # Get Factor Score
       cfa_fit <- cfa(cfa_mod,
@@ -313,7 +322,7 @@ analyze_rel <- function(condition, dat, fixed_objects) {
   result <- withCallingHandlers(
     {
       # Extract Model
-      cfa_mod <- FIXED_PARAMETER$cfa_mod
+      cfa_mod <- syntax_update(condition$n_items, path_include = FALSE)
       rel_mod <- FIXED_PARAMETER$rel_mod
       
       # Get Factor Score
@@ -541,7 +550,7 @@ evaluate_res <- function (condition, results, fixed_objects = NULL) {
 # ========================================= Run Experiment ========================================= #
 
 res <- runSimulation(design = DESIGNFACTOR,
-                     replications = 200,
+                     replications = 1000,
                      generate = generate_dat,
                      analyse = list(joint = analyze_joint,
                                     gsam = analyze_gsam,
@@ -552,9 +561,9 @@ res <- runSimulation(design = DESIGNFACTOR,
                      fixed_objects = FIXED_PARAMETER,
                      seed = rep(66330, nrow(DESIGNFACTOR)),
                      packages = "lavaan",
-                     filename = "CorrectedSE_09242024",
+                     filename = "CorrectedSE_10012024",
                      parallel = TRUE,
-                     ncores = 6,
+                     ncores = 30,
                      save = TRUE,
                      save_results = TRUE)
 

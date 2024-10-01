@@ -13,7 +13,7 @@ lapply(r_scripts, source)
 DESIGNFACTOR <- createDesign(
   N = c(100, 500),
   rel = c(0.7, 0.9),
-  reg = c(0, 0.3)
+  path = c(0, 0.3, 0.6)
   # num_items = c(3, 10) # Need to change. Now it's hardcoding
 )
 
@@ -59,7 +59,7 @@ sim_sem_dat <- function(num_obs, Lambda, Psi, Theta) {
 generate_dat <- function (condition, fixed_objects = NULL) {
   N <- condition$N
   rel = condition$rel
-  reg = condition$reg
+  path = condition$path
   # num_items = condition$num_items
   
   # Model Parameters
@@ -68,9 +68,9 @@ generate_dat <- function (condition, fixed_objects = NULL) {
   Lambda_2 <- c(.6, .7, .5)
   Lambda <- cbind(c(Lambda_1, rep(0, 3)),
                   c(rep(0, 3), Lambda_2))
-  Psi <- matrix(c(1, reg, 
-                  reg, 1), 
-                nrow = 2) # reg = 0.5
+  Psi <- matrix(c(1, path, 
+                  path, 1), 
+                nrow = 2) 
   # Compute error variance
   Error_1 <- sum(Lambda_1)^2*(1 - rel)/rel*c(0.44, 0.33, 0.23)
   Error_2 <- sum(Lambda_2)^2*(1 - rel)/rel*c(0.44, 0.33, 0.23)
@@ -79,7 +79,6 @@ generate_dat <- function (condition, fixed_objects = NULL) {
   # Simulate Data
   sim_sem_dat(num_obs = N, Lambda = Lambda, Psi = Psi, Theta = Theta)
 }
-
 
 # ========================================= Data Analysis ========================================= #
 # ====== Helper Function ========= #
@@ -145,172 +144,221 @@ compute_std_est <- function(ep, mod, fs) {
 # Joint Model
 analyze_joint <- function(condition, dat, fixed_objects) {
   
-  # Extract Model
-  joint_mod <- FIXED_PARAMETER$joint_mod
+  # Initialize a local warning counter for this replication
+  local_warning_counter <- 0
   
-  # Fit Model
-  mjoint <- sem(joint_mod, data = dat)
-  joint_est <- standardizedSolution(mjoint)[7, ]
+  # Fit the model and capture warnings
+  result <- withCallingHandlers(
+    {
+      # Extract Model
+      joint_mod <- FIXED_PARAMETER$joint_mod
+      
+      # Fit Model
+      mjoint <- sem(joint_mod, data = dat)
+      joint_est <- standardizedSolution(mjoint)[7, ]
+      
+      # Extract Parameter
+      out <- c(joint_est[["est.std"]], joint_est[["se"]], local_warning_counter)
+      names(out) <- c("est", "se", "warnings_count")
+      
+      # Check if any NA exists in the output
+      if (anyNA(out)) {
+        stop("The model did not obtain SE")
+      }
+      return(out)
+    },
+    warning = function(w) {
+      # Increment the local warning counter
+      local_warning_counter <<- local_warning_counter + 1
+    }
+  )
   
-  # Check convergence
-  converge <- ifelse(lavInspect(mjoint, "converged"), 1, 0)
-  
-  # Extract Parameter
-  out <- c(joint_est[["est.std"]], joint_est[["se"]], converge)
-  names(out) <- c("est", "se", "converge")
-  
-  # Check if any NA exists in the output
-  if (anyNA(out)) {
-    stop("The model did not obtain SE")
-  }
-  return(out)
+  return(result)
 }
 
 # SAM Global Model
 analyze_gsam <- function(condition, dat, fixed_objects) {
   
-  # Extract Model
-  joint_mod <- FIXED_PARAMETER$joint_mod
+  # Initialize a local warning counter for this replication
+  local_warning_counter <- 0
   
-  # Fit Model
-  mgsam <- sam(joint_mod, data = dat, sam.method = "global")
-  gsam_est <- standardizedSolution(mgsam)[7, ]
+  # Fit the model and capture warnings
+  result <- withCallingHandlers(
+    {
+      # Extract Model
+      joint_mod <- FIXED_PARAMETER$joint_mod
+      
+      # Fit Model
+      mgsam <- sam(joint_mod, data = dat, sam.method = "global")
+      gsam_est <- standardizedSolution(mgsam)[7, ]
+      
+      # Extract Parameter
+      out <- c(gsam_est[["est.std"]], gsam_est[["se"]], local_warning_counter)
+      names(out) <- c("est", "se", "warnings_count")
+      
+      # Check if any NA exists in the output
+      if (anyNA(out)) {
+        stop("The model did not obtain SE")
+      }
+      return(out)
+    },
+    warning = function(w) {
+      # Increment the local warning counter
+      local_warning_counter <<- local_warning_counter + 1
+    }
+  )
   
-  # Check convergence
-  converge <- ifelse(lavInspect(mgsam, "converged"), 1, 0)
-  
-  # Extract Parameter
-  out <- c(gsam_est[["est.std"]], gsam_est[["se"]], converge)
-  names(out) <- c("est", "se", "converge")
-  
-  # Check if any NA exists in the output
-  if (anyNA(out)) {
-    stop("The model did not obtain SE")
-  }
-  return(out)
+  return(result)
 }
 
 # SAM Local Model
 analyze_lsam <- function(condition, dat, fixed_objects) {
   
-  # Extract Model
-  joint_mod <- FIXED_PARAMETER$joint_mod
+  # Initialize a local warning counter for this replication
+  local_warning_counter <- 0
   
-  # Fit Model
-  mlsam <- sam(joint_mod, data = dat)
-  lsam_est <- standardizedSolution(mlsam)[7, ]
+  # Fit the model and capture warnings
+  result <- withCallingHandlers(
+    {
+      # Extract Model
+      joint_mod <- FIXED_PARAMETER$joint_mod
+      
+      # Fit Model
+      mlsam <- sam(joint_mod, data = dat)
+      lsam_est <- standardizedSolution(mlsam)[7, ]
+      
+      # Extract Parameter
+      out <- c(lsam_est[["est.std"]], lsam_est[["se"]], local_warning_counter)
+      names(out) <- c("est", "se", "warnings_count")
+      
+      # Check if any NA exists in the output
+      if (anyNA(out)) {
+        stop("The model did not obtain SE")
+      }
+      return(out)
+    },
+    warning = function(w) {
+      # Increment the local warning counter
+      local_warning_counter <<- local_warning_counter + 1
+    }
+  )
   
-  # Check convergence
-  converge <- ifelse(lavInspect(mlsam, "converged"), 1, 0)
-  
-  # Extract Parameter
-  out <- c(lsam_est[["est.std"]], lsam_est[["se"]], converge)
-  names(out) <- c("est", "se", "converge")
-  
-  # Check if any NA exists in the output
-  if (anyNA(out)) {
-    stop("The model did not obtain SE")
-  }
-  return(out)
+  return(result)
 }
 
 # 2S-PA Model with Corrected SE
 analyze_tspa <- function(condition, dat, fixed_objects) {
-
-  # Extract Model
-  cfa_mod <- FIXED_PARAMETER$cfa_mod
   
-  # Get Factor Score
-  cfa_fit <- cfa(cfa_mod,
-                 std.lv = TRUE, 
-                 data = dat,
-                 bounds = "pos.ov.var"
+  # Initialize a local warning counter for this replication
+  local_warning_counter <- 0
+  
+  # Fit the model and capture warnings
+  result <- withCallingHandlers(
+    {
+      # Extract Model
+      cfa_mod <- FIXED_PARAMETER$cfa_mod
+      
+      # Get Factor Score
+      cfa_fit <- cfa(cfa_mod,
+                     std.lv = TRUE, 
+                     data = dat,
+                     bounds = "pos.ov.var"
+      )
+      fs <- get_fs_lavaan(cfa_fit, method = "Bartlett", vfsLT = TRUE)
+      
+      # Fit Model
+      m2spa1 <- tspa("fy ~ fx",
+                     data = fs,
+                     fsT = attr(fs, "fsT"), fsL = attr(fs, "fsL")
+      )
+      tspa1_est <- standardizedSolution(m2spa1)[8, ]
+      
+      # Corrected Standard Errors
+      v1 <- attr(fs, "vfsLT")[c(5, 7), c(5, 7)]
+      # Gradient
+      grad_std <- numDeriv::grad(std_est,
+                                 x = diag(attr(fs, "fsT")), 
+                                 obj = m2spa1,
+                                 fs = fs)
+      vc_corrected2 <- lavInspect(m2spa1, what = "vcov.std")[1, 1] +
+        t(grad_std) %*% v1 %*% grad_std
+      
+      # Extract Parameter
+      out <- c(tspa1_est[["est.std"]], tspa1_est[["se"]],
+               tspa1_est[["est.std"]], sqrt(vc_corrected2[1, 1]), local_warning_counter)
+      names(out) <- c("est", "se", "est_corrected", "se_corrected", "warnings_count")
+      
+      # Check if any NA exists in the output
+      if (anyNA(out)) {
+        stop("The model did not obtain SE")
+      }
+      return(out)
+    },
+    warning = function(w) {
+      # Increment the local warning counter
+      local_warning_counter <<- local_warning_counter + 1
+    }
   )
-  fs <- get_fs_lavaan(cfa_fit, method = "Bartlett", vfsLT = TRUE)
   
-  # Fit Model
-  m2spa1 <- tspa("fy ~ fx",
-                 data = fs,
-                 fsT = attr(fs, "fsT"), fsL = attr(fs, "fsL")
-  )
-  tspa1_est <- standardizedSolution(m2spa1)[8, ]
-
-  # Corrected Standard Errors
-  v1 <- attr(fs, "vfsLT")[c(5, 7), c(5, 7)]
-  # Gradient
-  grad_std <- numDeriv::grad(std_est,
-                             x = diag(attr(fs, "fsT")), 
-                             obj = m2spa1,
-                             fs = fs)
-  vc_corrected2 <- lavInspect(m2spa1, what = "vcov.std")[1, 1] +
-    t(grad_std) %*% v1 %*% grad_std
-  
-  # Check convergence
-  converge <- ifelse(lavInspect(m2spa1, "converged"), 1, 0)
-
-  # Extract Parameter
-  out <- c(tspa1_est[["est.std"]], tspa1_est[["se"]],
-           tspa1_est[["est.std"]], sqrt(vc_corrected2[1, 1]),
-           converge)
-  names(out) <- c("est", "se",
-                  "est_corrected", "se_corrected",
-                  "converge")
-  
-  # Check if any NA exists in the output
-  if (anyNA(out)) {
-    stop("The model did not obtain SE")
-  }
-  return(out)
+  return(result)
 }
 
 # Reliability Model with Corrected Standard Error
 analyze_rel <- function(condition, dat, fixed_objects) {
-
-  # Extract Model
-  cfa_mod <- FIXED_PARAMETER$cfa_mod
-  rel_mod <- FIXED_PARAMETER$rel_mod
   
-  # Get Factor Score
-  cfa_fit <- cfa(cfa_mod,
-                 std.lv = TRUE, 
-                 data = dat,
-                 bounds = "pos.ov.var"
+  # Initialize a local warning counter for this replication
+  local_warning_counter <- 0
+  
+  # Fit the model and capture warnings
+  result <- withCallingHandlers(
+    {
+      # Extract Model
+      cfa_mod <- FIXED_PARAMETER$cfa_mod
+      rel_mod <- FIXED_PARAMETER$rel_mod
+      
+      # Get Factor Score
+      cfa_fit <- cfa(cfa_mod,
+                     std.lv = TRUE, 
+                     data = dat,
+                     bounds = "pos.ov.var"
+      )
+      fs <- get_fs_lavaan(cfa_fit, method = "Bartlett", vfsLT = TRUE)
+      
+      # Fit Model: Reliability
+      ep <- diag(attr(fs, "fsT"))
+      mod_tmp <- gsub("ep2", ep[2], rel_mod)
+      mod_tmp <- gsub("ep1", ep[1], mod_tmp)
+      m2spa2 <- sem(mod_tmp, data = fs)
+      tspa2_est <- standardizedSolution(m2spa2)[6, ]
+      
+      # Corrected SE
+      v1 <- attr(fs, "vfsLT")[c(5, 7), c(5, 7)]
+      
+      jac_std <- numDeriv::jacobian(compute_std_est,
+                                    x = diag(attr(fs, "fsT")), 
+                                    mod = rel_mod,
+                                    fs = fs)
+      vc_corrected3 <- lavInspect(m2spa2, what = "vcov.std")[5:6, 5:6] +
+        jac_std %*% v1 %*% t(jac_std)
+      
+      # Extract Parameter
+      out <- c(tspa2_est[["est.std"]], tspa2_est[["se"]],
+               tspa2_est[["est.std"]], sqrt(vc_corrected3[1, 1]), local_warning_counter)
+      names(out) <- c("est", "se", "est_corrected", "se_corrected", "warnings_count")
+      
+      # Check if any NA exists in the output
+      if (anyNA(out)) {
+        stop("The model did not obtain SE")
+      }
+      return(out)
+    },
+    warning = function(w) {
+      # Increment the local warning counter
+      local_warning_counter <<- local_warning_counter + 1
+    }
   )
-  fs <- get_fs_lavaan(cfa_fit, method = "Bartlett", vfsLT = TRUE)
   
-  # Fit Model: Reliability
-  ep <- diag(attr(fs, "fsT"))
-  mod_tmp <- gsub("ep2", ep[2], rel_mod)
-  mod_tmp <- gsub("ep1", ep[1], mod_tmp)
-  m2spa2 <- sem(mod_tmp, data = fs)
-  tspa2_est <- standardizedSolution(m2spa2)[6, ]
-  
-  # Corrected SE
-  v1 <- attr(fs, "vfsLT")[c(5, 7), c(5, 7)]
-  
-  jac_std <- numDeriv::jacobian(compute_std_est,
-                                x = diag(attr(fs, "fsT")), 
-                                mod = rel_mod,
-                                fs = fs)
-  vc_corrected3 <- lavInspect(m2spa2, what = "vcov.std")[5:6, 5:6] +
-    jac_std %*% v1 %*% t(jac_std)
-  
-  # Check convergence
-  converge <- ifelse(lavInspect(m2spa2, "converged"), 1, 0)
-  
-  # Extract Parameter
-  out <- c(tspa2_est[["est.std"]], tspa2_est[["se"]],
-           tspa2_est[["est.std"]], sqrt(vc_corrected3[1, 1]),
-           converge)
-  names(out) <- c("est", "se",
-                  "est_corrected", "se_corrected",
-                  "converge")
-  
-  # Check if any NA exists in the output
-  if (anyNA(out)) {
-    stop("The model did not obtain SE")
-  }
-  return(out)
+  return(result)
 }
 
 # ========================================= Results Summary ========================================= #
@@ -407,7 +455,7 @@ ci_stats <- function(est, se, par, stats_type) {
 evaluate_res <- function (condition, results, fixed_objects = NULL) {
   
   # Population parameter
-  pop_par <- condition$reg
+  pop_par <- condition$path
   
   # Parameter estimates
   est <- results[, grep(".est$", colnames(results))]

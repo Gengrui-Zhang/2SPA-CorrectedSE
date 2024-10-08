@@ -487,7 +487,7 @@ ci_stats <- function(est, se, par, stats_type) {
 
 # Evaluation Function
 evaluate_res <- function (condition, results, fixed_objects = NULL) {
-  
+
   # Population parameter
   pop_par <- condition$path
   
@@ -499,7 +499,7 @@ evaluate_res <- function (condition, results, fixed_objects = NULL) {
   est_corrected <- results[, grep(".est_corrected$", colnames(results)), drop = FALSE]
   se_corrected <- results[, grep(".se_corrected$", colnames(results)), drop = FALSE]
   # Convergence and Warning
-  convergences <- results[, grep(".warnings_count$", colnames(convergence))]
+  convergences <- results[, grep(".convergence$", colnames(convergence))]
   warnings <- results[, grep(".warnings_count$", colnames(results))]
 
   c(rbias = robust_bias(est,

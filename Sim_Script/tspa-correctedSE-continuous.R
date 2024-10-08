@@ -55,7 +55,8 @@ generate_dat <- function (condition, fixed_objects = NULL) {
   
   # Model Parameters
   Alpha <- rep(0, 2)
-  Lambda_1 <- runif(n_items, min = 0.2, max = 0.9)
+  Lambda_1 <- rep(c(0.4, 0.5, 0.6, 0.7, 0.8), each = n_items / 5)
+  Lambda_1 <- rep(c(0.4, 0.5, 0.6, 0.7, 0.8), each = n_items / 5)
   Lambda_2 <- runif(n_items, min = 0.2, max = 0.9)
   Lambda <- cbind(c(Lambda_1, rep(0, n_items)),
                   c(rep(0, n_items), Lambda_2))
@@ -166,9 +167,12 @@ analyze_joint <- function(condition, dat, fixed_objects) {
       mjoint <- sem(joint_mod, data = dat)
       joint_est <- standardizedSolution(mjoint)[7, ]
       
+      # Convergence Check
+      converge <- ifelse(lavInspect(mjoint, "converged"), 1, 0)
+      
       # Extract Parameter
-      out <- c(joint_est[["est.std"]], joint_est[["se"]], local_warning_counter)
-      names(out) <- c("est", "se", "warnings_count")
+      out <- c(joint_est[["est.std"]], joint_est[["se"]], local_warning_counter, converge)
+      names(out) <- c("est", "se", "warnings_count", "convergence")
       
       # Check if any NA exists in the output
       if (anyNA(out)) {
@@ -201,9 +205,12 @@ analyze_gsam <- function(condition, dat, fixed_objects) {
       mgsam <- sam(joint_mod, data = dat, sam.method = "global")
       gsam_est <- standardizedSolution(mgsam)[7, ]
       
+      # Convergence Check
+      converge <- ifelse(lavInspect(mgsam, "converged"), 1, 0)
+      
       # Extract Parameter
-      out <- c(gsam_est[["est.std"]], gsam_est[["se"]], local_warning_counter)
-      names(out) <- c("est", "se", "warnings_count")
+      out <- c(gsam_est[["est.std"]], gsam_est[["se"]], local_warning_counter, converge)
+      names(out) <- c("est", "se", "warnings_count", "convergence")
       
       # Check if any NA exists in the output
       if (anyNA(out)) {
@@ -236,9 +243,12 @@ analyze_lsam <- function(condition, dat, fixed_objects) {
       mlsam <- sam(joint_mod, data = dat)
       lsam_est <- standardizedSolution(mlsam)[7, ]
       
+      # Convergence Check
+      converge <- ifelse(lavInspect(mlsam, "converged"), 1, 0)
+      
       # Extract Parameter
-      out <- c(lsam_est[["est.std"]], lsam_est[["se"]], local_warning_counter)
-      names(out) <- c("est", "se", "warnings_count")
+      out <- c(lsam_est[["est.std"]], lsam_est[["se"]], local_warning_counter, converge)
+      names(out) <- c("est", "se", "warnings_count", "convergence")
       
       # Check if any NA exists in the output
       if (anyNA(out)) {
@@ -292,10 +302,16 @@ analyze_tspa <- function(condition, dat, fixed_objects) {
       vc_corrected2 <- lavInspect(m2spa1, what = "vcov.std")[1, 1] +
         t(grad_std) %*% v1 %*% grad_std
       
+      # Convergence Check
+      converge <- ifelse(lavInspect(m2spa1, "converged"), 1, 0)
+      
       # Extract Parameter
       out <- c(tspa1_est[["est.std"]], tspa1_est[["se"]],
-               tspa1_est[["est.std"]], sqrt(vc_corrected2[1, 1]), local_warning_counter)
-      names(out) <- c("est", "se", "est_corrected", "se_corrected", "warnings_count")
+               tspa1_est[["est.std"]], sqrt(vc_corrected2[1, 1]), 
+               local_warning_counter,
+               converge)
+      names(out) <- c("est", "se", "est_corrected", "se_corrected", 
+                      "warnings_count", "convergence")
       
       # Check if any NA exists in the output
       if (anyNA(out)) {
@@ -350,10 +366,15 @@ analyze_rel <- function(condition, dat, fixed_objects) {
       vc_corrected3 <- lavInspect(m2spa2, what = "vcov.std")[5:6, 5:6] +
         jac_std %*% v1 %*% t(jac_std)
       
+      # Convergence Check
+      converge <- ifelse(lavInspect(m2spa2, "converged"), 1, 0)
+      
       # Extract Parameter
       out <- c(tspa2_est[["est.std"]], tspa2_est[["se"]],
-               tspa2_est[["est.std"]], sqrt(vc_corrected3[1, 1]), local_warning_counter)
-      names(out) <- c("est", "se", "est_corrected", "se_corrected", "warnings_count")
+               tspa2_est[["est.std"]], sqrt(vc_corrected3[1, 1]), 
+               local_warning_counter, converge)
+      names(out) <- c("est", "se", "est_corrected", "se_corrected", 
+                      "warnings_count", "convergence")
       
       # Check if any NA exists in the output
       if (anyNA(out)) {
@@ -371,6 +392,15 @@ analyze_rel <- function(condition, dat, fixed_objects) {
 }
 
 # ========================================= Results Summary ========================================= #
+# Helper function for convergence rate
+convergence_rate <- function(converge) {
+  apply(converge, 2, function(x) 1-(sum(is.na(x)) / length(x)))
+}
+
+# Helper function for warning sum
+warning_sum <- function(count) {
+  apply(count, 2, sum, na.rm = TRUE)
+}
 
 # Helper function: robust bias
 robust_bias <- function(est, se, par, trim = 0, type = NULL) {
@@ -429,11 +459,6 @@ outlier_se <- function(se) {
   return(results)
 }
 
-# Helper function for convergence rate
-convergence_rate <- function(converge) {
-  apply(converge, 2, function(x) 1-(sum(is.na(x)) / length(x)))
-}
-
 # Helper function for calculating coverage rate, Type I error rate, and power
 ci_stats <- function(est, se, par, stats_type) {
   
@@ -473,32 +498,26 @@ evaluate_res <- function (condition, results, fixed_objects = NULL) {
   # Check if corrected estimates exist
   est_corrected <- results[, grep(".est_corrected$", colnames(results)), drop = FALSE]
   se_corrected <- results[, grep(".se_corrected$", colnames(results)), drop = FALSE]
+  # Convergence and Warning
+  convergences <- results[, grep(".warnings_count$", colnames(convergences))]
+  warnings <- results[, grep(".warnings_count$", colnames(results))]
 
-  c(rb = robust_bias(est,
+  c(rbias = robust_bias(est,
                      se,
                      pop_par,
                      type = "raw"),
-    rb_corrected = robust_bias(est_corrected,
+    rbias_corrected = robust_bias(est_corrected,
                                se_corrected,
                                pop_par,
                                type = "raw"),
-    sb = robust_bias(est,
+    sbias = robust_bias(est,
                      se,
                      pop_par,
                      type = "standardized"),
-    sb_corrected = robust_bias(est_corrected,
+    sbias_corrected = robust_bias(est_corrected,
                                se_corrected,
                                pop_par,
                                type = "standardized"),
-    # trim_bias = robust_bias(est,
-    #                         se,
-    #                         pop_par,
-    #                         trim = 0.2,
-    #                         type = "trim"), # 20% trimmed mean
-    # stdMed_bias = robust_bias(est,
-    #                           se,
-    #                           pop_par,
-    #                           type = "median"),
     mean_se = colMeans(se, na.rm = TRUE),
     mean_se_corrected = colMeans(se_corrected, na.rm = TRUE),
     raw_rsb = rse_bias(est,
@@ -507,14 +526,14 @@ evaluate_res <- function (condition, results, fixed_objects = NULL) {
     raw_rsb_corrected = rse_bias(est_corrected,
                                  se_corrected,
                                  type = "raw"),
-    # stdMed_rse_bias = rse_bias(est,
-    #                            se,
-    #                            type = "median"),
-    # trim_rse_bias = rse_bias(est,
-    #                          se,
-    #                          trim = 0.2,
-    #                          type = "trim"),
-    # outlier_se = outlier_se(se),
+    stdMed_rsb = rse_bias(est,
+                          se,
+                          type = "median"),
+    stdMed_rsb_corrected = rse_bias(est_corrected,
+                               se_corrected,
+                               type = "median"),
+    out_se = outlier_se(se),
+    out_se_corrected = outlier_se(se_corrected),
     coverage = ci_stats(est,
                         se,
                         pop_par,
@@ -543,7 +562,8 @@ evaluate_res <- function (condition, results, fixed_objects = NULL) {
                 parameter = pop_par),
     rmse_corrected = RMSE(na.omit(est_corrected),
                           parameter = pop_par),
-    convergence = convergence_rate(converge)
+    convergence = convergence_rate(converge),
+    warning_total = warning_sum(warnings)
   )
 }
 
@@ -561,16 +581,8 @@ res <- runSimulation(design = DESIGNFACTOR,
                      fixed_objects = FIXED_PARAMETER,
                      seed = rep(66330, nrow(DESIGNFACTOR)),
                      packages = "lavaan",
-                     filename = "CorrectedSE_10012024",
+                     filename = "CorrectedSE_10082024",
                      parallel = TRUE,
                      ncores = 30,
                      save = TRUE,
                      save_results = TRUE)
-
-
-# Notes:
-# 1. Warning to error
-# 2. Number of items
-# 3. Try regression coefficients: larger regression coefficients could give more window of bias
-# 4. Add more comments (especially for analysis functions)
-

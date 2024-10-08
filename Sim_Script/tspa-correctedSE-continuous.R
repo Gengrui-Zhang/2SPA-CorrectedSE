@@ -499,7 +499,7 @@ evaluate_res <- function (condition, results, fixed_objects = NULL) {
   est_corrected <- results[, grep(".est_corrected$", colnames(results)), drop = FALSE]
   se_corrected <- results[, grep(".se_corrected$", colnames(results)), drop = FALSE]
   # Convergence and Warning
-  convergences <- results[, grep(".warnings_count$", colnames(convergences))]
+  convergences <- results[, grep(".warnings_count$", colnames(convergence))]
   warnings <- results[, grep(".warnings_count$", colnames(results))]
 
   c(rbias = robust_bias(est,
@@ -570,7 +570,7 @@ evaluate_res <- function (condition, results, fixed_objects = NULL) {
 # ========================================= Run Experiment ========================================= #
 
 res <- runSimulation(design = DESIGNFACTOR,
-                     replications = 1000,
+                     replications = 2000,
                      generate = generate_dat,
                      analyse = list(joint = analyze_joint,
                                     gsam = analyze_gsam,

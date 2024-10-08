@@ -562,7 +562,7 @@ evaluate_res <- function (condition, results, fixed_objects = NULL) {
                 parameter = pop_par),
     rmse_corrected = RMSE(na.omit(est_corrected),
                           parameter = pop_par),
-    convergence = convergence_rate(converge),
+    convergence = convergence_rate(convergences),
     warning_total = warning_sum(warnings)
   )
 }

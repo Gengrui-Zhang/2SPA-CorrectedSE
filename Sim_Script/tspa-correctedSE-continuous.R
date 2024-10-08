@@ -494,7 +494,6 @@ evaluate_res <- function (condition, results, fixed_objects = NULL) {
   # Parameter estimates
   est <- results[, grep(".est$", colnames(results))]
   se <- results[, grep(".se$", colnames(results))]
-  converge <- results[, grep(".converge$", colnames(results))]
   # Check if corrected estimates exist
   est_corrected <- results[, grep(".est_corrected$", colnames(results)), drop = FALSE]
   se_corrected <- results[, grep(".se_corrected$", colnames(results)), drop = FALSE]

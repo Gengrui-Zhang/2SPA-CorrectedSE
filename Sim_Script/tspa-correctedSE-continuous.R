@@ -165,7 +165,9 @@ analyze_joint <- function(condition, dat, fixed_objects) {
       
       # Fit Model
       mjoint <- sem(joint_mod, data = dat)
-      joint_est <- standardizedSolution(mjoint)[7, ]
+      mjoint_est <- standardizedSolution(mjoint)
+      joint_est <-  mjoint_est %>%
+        filter(lhs == "fy", op == "~", rhs == "fx")
       
       # Convergence Check
       converge <- ifelse(lavInspect(mjoint, "converged"), 1, 0)
@@ -203,7 +205,9 @@ analyze_gsam <- function(condition, dat, fixed_objects) {
       
       # Fit Model
       mgsam <- sam(joint_mod, data = dat, sam.method = "global")
-      gsam_est <- standardizedSolution(mgsam)[7, ]
+      mgsam_est <- standardizedSolution(mgsam)
+      gsam_est <-  mgsam_est %>%
+        filter(lhs == "fy", op == "~", rhs == "fx")
       
       # Convergence Check
       converge <- ifelse(lavInspect(mgsam, "converged"), 1, 0)
@@ -241,7 +245,9 @@ analyze_lsam <- function(condition, dat, fixed_objects) {
       
       # Fit Model
       mlsam <- sam(joint_mod, data = dat)
-      lsam_est <- standardizedSolution(mlsam)[7, ]
+      mlsam_est <- standardizedSolution(mlsam)
+      lsam_est <-  mlsam_est %>%
+        filter(lhs == "fy", op == "~", rhs == "fx")
       
       # Convergence Check
       converge <- ifelse(lavInspect(mlsam, "converged"), 1, 0)
@@ -290,7 +296,9 @@ analyze_tspa <- function(condition, dat, fixed_objects) {
                      data = fs,
                      fsT = attr(fs, "fsT"), fsL = attr(fs, "fsL")
       )
-      tspa1_est <- standardizedSolution(m2spa1)[8, ]
+      m2spa1_est <- standardizedSolution(m2spa1)
+      tspa1_est <-  m2spa1_est %>%
+        filter(lhs == "fy", op == "~", rhs == "fx")
       
       # Corrected Standard Errors
       v1 <- attr(fs, "vfsLT")[c(5, 7), c(5, 7)]
@@ -354,7 +362,9 @@ analyze_rel <- function(condition, dat, fixed_objects) {
       mod_tmp <- gsub("ep2", ep[2], rel_mod)
       mod_tmp <- gsub("ep1", ep[1], mod_tmp)
       m2spa2 <- sem(mod_tmp, data = fs)
-      tspa2_est <- standardizedSolution(m2spa2)[6, ]
+      m2spa2_est <- standardizedSolution(m2spa2)
+      tspa2_est <- m2spa2_est %>%
+        filter(lhs == "fy", op == "~", rhs == "fx")
       
       # Corrected SE
       v1 <- attr(fs, "vfsLT")[c(5, 7), c(5, 7)]
@@ -570,7 +580,7 @@ evaluate_res <- function (condition, results, fixed_objects = NULL) {
 # ========================================= Run Experiment ========================================= #
 
 res <- runSimulation(design = DESIGNFACTOR,
-                     replications = 1000,
+                     replications = 2000,
                      generate = generate_dat,
                      analyse = list(joint = analyze_joint,
                                     gsam = analyze_gsam,

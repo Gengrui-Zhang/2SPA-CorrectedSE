@@ -508,7 +508,7 @@ evaluate_res <- function (condition, results, fixed_objects = NULL) {
   est_corrected <- results[, grep(".est_corrected$", colnames(results)), drop = FALSE]
   se_corrected <- results[, grep(".se_corrected$", colnames(results)), drop = FALSE]
   # Convergence and Warning
-  convergences <- results[, grep(".convergence$", colnames(convergence))]
+  convergences <- results[, grep(".convergence$", colnames(results))]
   warnings <- results[, grep(".warnings_count$", colnames(results))]
 
   c(rbias = robust_bias(est,
@@ -590,8 +590,19 @@ res <- runSimulation(design = DESIGNFACTOR,
                      fixed_objects = FIXED_PARAMETER,
                      seed = rep(66330, nrow(DESIGNFACTOR)),
                      packages = "lavaan",
-                     filename = "CorrectedSE_10082024",
+                     filename = "CorrectedSE_10212024",
                      parallel = TRUE,
                      ncores = 30,
                      save = TRUE,
                      save_results = TRUE)
+
+# runSimulation(design = DESIGNFACTOR[1:2, ],
+#               replications = 5,
+#               generate = generate_dat,
+#               analyse = list(joint = analyze_joint,
+#                              gsam = analyze_gsam,
+#                              lsam = analyze_lsam,
+#                              tspa = analyze_tspa,
+#                              rel = analyze_rel),
+#               summarise = evaluate_res,
+#               fixed_objects = FIXED_PARAMETER)

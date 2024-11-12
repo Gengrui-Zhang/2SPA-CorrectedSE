@@ -7,13 +7,13 @@ library(ggplot2)
 library(rlang)
 
 # Read Data
-data_path <- here("Sim_Data", "CorrectedSE_10012024.rds")
+data_path <- here("Sim_Data", "CorrectedSE_10212024.rds")
 df <- readRDS(data_path)
 
 # Helper Function
 process_data <- function(data) {
   results <- data %>%
-    gather("var", "val", rb.joint.est:rmse_corrected.rel.est_corrected) %>%
+    gather("var", "val", rbias.joint.est:warning_total.rel.warnings_count) %>%
     dplyr::select(-c(REPLICATIONS:WARNINGS)) %>%
     separate(col = var, into = c("stats", "method"), sep = "\\.") %>%
     spread(stats, val) %>%
@@ -34,7 +34,7 @@ plot_results <- function(data,
                          point_size = 3, 
                          add_lines = FALSE, 
                          remove_baseline = FALSE) {
-  browser()
+
   # Optionally filter out "mmr" group
   if (remove_baseline) {
     data <- data %>% filter(!!sym(color_var) != "mmr")
@@ -92,19 +92,19 @@ power1_pd <- process_data(powerdata_1)
 power2_pd <- process_data(powerdata_2)
 
 # Write the processed data
-write_csv(type1_pd, "Sim_Data/type1_10012024.csv")
-write_csv(power1_pd, "Sim_Data/power1_10012024.csv")
-write_csv(power2_pd, "Sim_Data/power2_10012024.csv")
+write_csv(type1_pd, "Sim_Data/type1_10212024.csv")
+write_csv(power1_pd, "Sim_Data/power1_10212024.csv")
+write_csv(power2_pd, "Sim_Data/power2_10212024.csv")
 
 # Plot the results
-type1_plot <- read.csv("Sim_Data/type1_10012024.csv")
-power1_plot <- read.csv("Sim_Data/power1_10012024.csv")
-power2_plot <- read.csv("Sim_Data/power2_10012024.csv")
+type1_plot <- read.csv("Sim_Data/type1_10212024.csv")
+power1_plot <- read.csv("Sim_Data/power1_10212024.csv")
+power2_plot <- read.csv("Sim_Data/power2_10212024.csv")
 
 # Standard Bias
 sd_bias_plot <- plot_results(power1_plot,
                              "N",
-                             "sb",
+                             "sbias",
                              "Sample Size (N)",
                              "Standardized Bias",
                              c(-0.5, 0.5),

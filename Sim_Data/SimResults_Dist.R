@@ -1,8 +1,12 @@
 # Read Data
-dat_dir <- "/Users/jimmy_z/R Projects/2SPA-CorrectedSE/Sim_Data/CorrectedSE_10012024-results_marklai-HP-Z4-G4-Workstation"
+library(here)
+dat_dir <- here("Sim_Data", "CorrectedSE_10212024_Raw")
 
 # Wrong order: Define the name directly
+# List all files matching the pattern
 dat_list <- list.files(path = dat_dir, pattern = "results-row-.*\\.rds", full.names = TRUE)
+file_numbers <- as.numeric(gsub(".*results-row-([0-9]+)\\.rds", "\\1", dat_list))
+dat_list <- dat_list[order(file_numbers)]
 
 results_list <- lapply(dat_list, function(file) {
   data <- readRDS(file)

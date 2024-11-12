@@ -1,0 +1,513 @@
+---
+title             : "Two Stage Path Analysis with Corrected Standard Error"
+shorttitle        : "2S-PA with Corrected SE"
+
+author: 
+  - name          : "Jimmy"
+    affiliation   : "1"
+    # corresponding : yes    # Define only one corresponding author
+    # # address       : "Postal address"
+    # email         : "gengruiz@usc.edu"
+    # role: # Contributorship roles (e.g., CRediT, https://credit.niso.org/)
+    #   - "Conceptualization"
+    #   - "Writing - Original Draft Preparation"
+    #   - "Writing - Review & Editing"
+
+affiliation:
+  - id            : "1"
+    institution   : "University of Southern California"
+
+authornote: |
+  Add Note
+
+floatsintext      : no
+linenumbers       : yes
+draft             : no
+mask              : no
+
+figurelist        : no
+tablelist         : no
+footnotelist      : no
+
+classoption       : "man"
+output            : papaja::apa6_pdf
+---
+
+```{r setup, include = FALSE}
+library("papaja")
+library(haven)
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(here)
+library(tidyverse)
+library(semTools)
+library(magick)
+library(SimDesign)
+
+r_scripts <- list.files(here("R"), pattern = "\\.R$", full.names = TRUE)
+lapply(r_scripts, source)
+```
+
+```{r analysis-preferences}
+# Seed for random number generation
+set.seed(42)
+knitr::opts_chunk$set(cache.extra = knitr::rand_seed)
+```
+
+```{r message=FALSE, warning=FALSE}
+sim <- readRDS(here("Sim_Data", "CorrectedSE_11112024.rds"))
+sim_results <- sim %>% 
+  dplyr::select(-c(REPLICATIONS:COMPLETED)) %>%
+  mutate(across(where(is.numeric), round, 4)) %>%
+  relocate(n_items, .before = rel) %>%
+  relocate(rel, .after = N_per_p) %>%
+  relocate(path, .after = rel)
+
+sim_null <- sim_results %>% 
+  filter(path == 0) %>%
+  dplyr::select(-path)
+sim_alt1 <- sim_results %>% 
+  filter(path == 0.3) %>%
+  dplyr::select(-path)
+sim_alt2 <- sim_results %>% 
+  filter(path == 0.6) %>%
+  dplyr::select(-path)
+
+method_est <- c("Joint-SEM", "Global-SAM", "Local-SAM", "2S-PA", "2S-PA-Rel")
+method_se <- c("Joint-SEM", "Global-SAM", "Local-SAM", "2S-PA", "2S-PA-Rel", "2S-PA-Corrected", "2S-PA-Rel-Corrected")
+```
+
+# Results
+
+```{r helper functions, message=FALSE, warning=FALSE}
+# Help Function for Data Conversion
+convert_to_wide <- function(data, method_vec) {
+  
+  # Pivot the data and format it
+  data_wide <- data %>%
+    pivot_wider(names_from = `$\\rho$`,  # Fixed rho_col
+                values_from = method_vec, 
+                names_prefix = "rho_") %>%  # Fixed num_col_prefix
+    group_by(`$\\textit{p}$`) %>%  # Fixed group_col
+    mutate(`$\\textit{p}$` = ifelse(row_number() == 1, as.character(`$\\textit{p}$`), " "),
+           `$\\textit{N/p}$` = as.factor(`$\\textit{N/p}$`),
+           across(where(is.numeric), ~ sprintf("%.2f", .))) %>%
+    ungroup()
+
+  # Update column names
+  col_names <- c("$\\textit{p}$", "$\\textit{N/p}$", paste(rep(c("$\\rho = .70$", "$\\rho = .90$"), length(method_vec))))
+  names(data_wide) <- col_names
+  
+  return(data_wide)
+}
+
+# Helper Function for SB
+bold_if <- function(cell) {
+  first_number <- as.numeric(str_extract(cell, "^[^\\(]+"))
+  if (!is.na(first_number) && abs(first_number) > 0.4) {
+    return(sprintf("\\textbf{%s}", cell))
+  } else {
+    return(cell)
+  }
+}
+
+# Helper Function for MAD
+bold_if_larger_than_10 <- function(cell) {
+  first_number <- as.numeric(str_extract(cell, "^[^\\(]+"))
+  if (!is.na(first_number) && abs(first_number) > 10) {
+    return(sprintf("\\textbf{%s}", cell))
+  } else {
+    return(cell)
+  }
+}
+
+# Helper Function
+bold_if_less_than_91 <- function(cell) {
+  numeric_cell <- as.numeric(cell)
+  if (!is.na(numeric_cell) && abs(numeric_cell) < 91) {
+    return(sprintf("\\textbf{%s}", numeric_cell))
+  } else {
+    return(numeric_cell)
+  }
+}
+```
+
+```{r standardized bias (raw bias), message=FALSE, warning=FALSE}
+
+# Null Effect
+rb_null <- sim_null %>%
+  dplyr::select(n_items:rel, rbias.joint.est:rbias.rel.est)
+names(rb_null) <- c(c("$\\textit{p}$", "$\\textit{N/p}$", "$\\rho$"), method_est)
+
+rb_null_wide <- convert_to_wide(rb_null, method_vec = method_est)
+
+sb_null <- sim_null %>%
+  dplyr::select(n_items:rel, sbias.joint.est:sbias.rel.est)
+names(sb_null) <- c(c("$\\textit{p}$", "$\\textit{N/p}$", "$\\rho$"), method_est)
+
+sb_null_wide <- convert_to_wide(sb_null, method_vec = method_est)
+
+rbsb_null <- rb_null_wide
+for (col_idx in 3:ncol(rb_null_wide)) {
+  combined_values <- mapply(FUN = function(x, y) paste(y, "\ (", x, ")", sep = ""),
+                            x = rb_null_wide[, col_idx], y = sb_null_wide[, col_idx])
+  rbsb_null[, col_idx] <- combined_values
+}
+
+for (i in 3:ncol(rbsb_null)) {
+  rbsb_null[[i]] <- sapply(rbsb_null[[i]], bold_if)
+}
+
+# Alternative Effect (0.3)
+rb_alt1 <- sim_alt1 %>%
+  dplyr::select(n_items:rel, rbias.joint.est:rbias.rel.est)
+names(rb_alt1) <- c(c("$\\textit{p}$", "$\\textit{N/p}$", "$\\rho$"), method_est)
+
+rb_alt1_wide <- convert_to_wide(rb_alt1, method_vec = method_est)
+
+sb_alt1 <- sim_alt1 %>%
+  dplyr::select(n_items:rel, sbias.joint.est:sbias.rel.est)
+names(sb_alt1) <- c(c("$\\textit{p}$", "$\\textit{N/p}$", "$\\rho$"), method_est)
+
+sb_alt1_wide <- convert_to_wide(sb_alt1, method_vec = method_est)
+  
+rbsb_alt1 <- rb_alt1_wide
+for (col_idx in 3:ncol(rb_alt1_wide)) {
+  combined_values <- mapply(FUN = function(x, y) paste(y, "\ (", x, ")", sep = ""),
+                            x = rb_alt1_wide[, col_idx], y = sb_alt1_wide[, col_idx])
+  rbsb_alt1[, col_idx] <- combined_values
+}
+
+for (i in 3:ncol(rbsb_alt1)) {
+  rbsb_alt1[[i]] <- sapply(rbsb_alt1[[i]], bold_if)
+}
+
+# Alternative Effect (0.6)
+rb_alt2 <- sim_alt2 %>%
+  dplyr::select(n_items:rel, rbias.joint.est:rbias.rel.est)
+names(rb_alt2) <- c(c("$\\textit{p}$", "$\\textit{N/p}$", "$\\rho$"), method_est)
+
+rb_alt2_wide <- convert_to_wide(rb_alt2, method_vec = method_est)
+
+sb_alt2 <- sim_alt2 %>%
+  dplyr::select(n_items:rel, sbias.joint.est:sbias.rel.est)
+names(sb_alt2) <- c(c("$\\textit{p}$", "$\\textit{N/p}$", "$\\rho$"), method_est)
+
+sb_alt2_wide <- convert_to_wide(sb_alt2, method_vec = method_est)
+  
+rbsb_alt2 <- rb_alt2_wide
+for (col_idx in 3:ncol(rb_alt2_wide)) {
+  combined_values <- mapply(FUN = function(x, y) paste(y, "\ (", x, ")", sep = ""),
+                            x = rb_alt2_wide[, col_idx], y = sb_alt2_wide[, col_idx])
+  rbsb_alt2[, col_idx] <- combined_values
+}
+
+for (i in 3:ncol(rbsb_alt2)) {
+  rbsb_alt2[[i]] <- sapply(rbsb_alt2[[i]], bold_if)
+}
+
+# Table
+rbsb_table <- apa_table(list(`$\\gamma = 0$` = rbsb_null,
+                             `$\\gamma = 0.3$` = rbsb_alt1,
+                             `$\\gamma = 0.6$` = rbsb_alt2),
+                        merge_method = "table_spanner",
+                        escape = F,
+                        caption = "Standardized Bias and Raw Bias of Path Coefficient Estimates ($\\gamma$) Across 2,000 Replications.",
+                        align = c(rep("c", ncol(rbsb_null))),
+                        col_spanners = list(`Joint SEM` = c(3, 4), `Global SAM` = c(5, 6),
+                                            `Local SAM` = c(7, 8), `2S-PA` = c(9, 10),
+                                            `2S-PA Rel` = c(11, 12)),
+                        landscape = TRUE,
+                        font_size = "tiny")
+
+rbsb_table
+```
+
+```{r MAD relative SE bias with outliers proportion, message=FALSE, warning=FALSE}
+# Null Effect
+MAD_null <- sim_null %>% 
+  dplyr::select(n_items, N_per_p, rel, stdMed_rsb.joint.se:stdMed_rsb_corrected.rel.se_corrected) %>%
+  mutate(stdMed_rsb.joint.se = stdMed_rsb.joint.se*100,
+         stdMed_rsb.gsam.se = stdMed_rsb.gsam.se*100,
+         stdMed_rsb.lsam.se = stdMed_rsb.lsam.se*100,
+         stdMed_rsb.tspa.se = stdMed_rsb.tspa.se*100,
+         stdMed_rsb.rel.se = stdMed_rsb.rel.se*100,
+         stdMed_rsb_corrected.tspa.se_corrected = stdMed_rsb_corrected.tspa.se_corrected*100,
+         stdMed_rsb_corrected.rel.se_corrected = stdMed_rsb_corrected.rel.se_corrected*100)
+names(MAD_null) <- c(c("$\\textit{p}$", "$\\textit{N/p}$", "$\\rho$"), method_se)
+
+MAD_null_wide <- convert_to_wide(MAD_null, method_vec = method_se)
+
+outse_null <- sim_null %>% 
+  dplyr::select(n_items, N_per_p, rel, out_se.joint.se:out_se_corrected.rel.se_corrected)
+names(outse_null) <- c(c("$\\textit{p}$", "$\\textit{N/p}$", "$\\rho$"), method_se)
+
+outse_null_wide <- convert_to_wide(outse_null, method_vec = method_se)
+
+for (col_idx in 3:ncol(MAD_null_wide)) {
+  combined_values <- mapply(FUN = function(x, y) paste(y, "\ (", x, ")", sep = ""),
+                            x = outse_null_wide[, col_idx], y = MAD_null_wide[, col_idx])
+  MAD_null_wide[, col_idx] <- combined_values
+}
+
+for (i in 3:ncol(MAD_null_wide)) {
+  MAD_null_wide[[i]] <- sapply(MAD_null_wide[[i]], bold_if_larger_than_10)
+}
+names(MAD_null_wide) <- c("$\\textit{p}$", "$\\textit{N/p}$", paste(rep(c("$\\rho = .70$", "$\\rho = .90$"), length(method_se))))
+
+# Alternative Effect 1
+MAD_alt1 <- sim_alt1 %>% 
+  dplyr::select(n_items, N_per_p, rel, stdMed_rsb.joint.se:stdMed_rsb_corrected.rel.se_corrected) %>%
+  mutate(stdMed_rsb.joint.se = stdMed_rsb.joint.se*100,
+         stdMed_rsb.gsam.se = stdMed_rsb.gsam.se*100,
+         stdMed_rsb.lsam.se = stdMed_rsb.lsam.se*100,
+         stdMed_rsb.tspa.se = stdMed_rsb.tspa.se*100,
+         stdMed_rsb.rel.se = stdMed_rsb.rel.se*100,
+         stdMed_rsb_corrected.tspa.se_corrected = stdMed_rsb_corrected.tspa.se_corrected*100,
+         stdMed_rsb_corrected.rel.se_corrected = stdMed_rsb_corrected.rel.se_corrected*100)
+names(MAD_alt1) <- c(c("$\\textit{p}$", "$\\textit{N/p}$", "$\\rho$"), method_se)
+
+MAD_alt1_wide <- convert_to_wide(MAD_alt1, method_vec = method_se)
+
+outse_alt1 <- sim_alt1 %>% 
+  dplyr::select(n_items, N_per_p, rel, out_se.joint.se:out_se_corrected.rel.se_corrected)
+names(outse_alt1) <- c(c("$\\textit{p}$", "$\\textit{N/p}$", "$\\rho$"), method_se)
+
+outse_alt1_wide <- convert_to_wide(outse_alt1, method_vec = method_se)
+
+for (col_idx in 3:ncol(MAD_alt1_wide)) {
+  combined_values <- mapply(FUN = function(x, y) paste(y, "\ (", x, ")", sep = ""),
+                            x = outse_alt1_wide[, col_idx], y = MAD_alt1_wide[, col_idx])
+  MAD_alt1_wide[, col_idx] <- combined_values
+}
+
+for (i in 3:ncol(MAD_alt1_wide)) {
+  MAD_alt1_wide[[i]] <- sapply(MAD_alt1_wide[[i]], bold_if_larger_than_10)
+}
+names(MAD_alt1_wide) <- c("$\\textit{p}$", "$\\textit{N/p}$", paste(rep(c("$\\rho = .70$", "$\\rho = .90$"), length(method_se))))
+
+# Alternative Effect 2
+MAD_alt2 <- sim_alt2 %>% 
+  dplyr::select(n_items, N_per_p, rel, stdMed_rsb.joint.se:stdMed_rsb_corrected.rel.se_corrected) %>%
+  mutate(stdMed_rsb.joint.se = stdMed_rsb.joint.se*100,
+         stdMed_rsb.gsam.se = stdMed_rsb.gsam.se*100,
+         stdMed_rsb.lsam.se = stdMed_rsb.lsam.se*100,
+         stdMed_rsb.tspa.se = stdMed_rsb.tspa.se*100,
+         stdMed_rsb.rel.se = stdMed_rsb.rel.se*100,
+         stdMed_rsb_corrected.tspa.se_corrected = stdMed_rsb_corrected.tspa.se_corrected*100,
+         stdMed_rsb_corrected.rel.se_corrected = stdMed_rsb_corrected.rel.se_corrected*100)
+names(MAD_alt2) <- c(c("$\\textit{p}$", "$\\textit{N/p}$", "$\\rho$"), method_se)
+
+MAD_alt2_wide <- convert_to_wide(MAD_alt2, method_vec = method_se)
+
+outse_alt2 <- sim_alt2 %>% 
+  dplyr::select(n_items, N_per_p, rel, out_se.joint.se:out_se_corrected.rel.se_corrected)
+names(outse_alt2) <- c(c("$\\textit{p}$", "$\\textit{N/p}$", "$\\rho$"), method_se)
+
+outse_alt2_wide <- convert_to_wide(outse_alt2, method_vec = method_se)
+
+for (col_idx in 3:ncol(MAD_alt2_wide)) {
+  combined_values <- mapply(FUN = function(x, y) paste(y, "\ (", x, ")", sep = ""),
+                            x = outse_alt2_wide[, col_idx], y = MAD_alt2_wide[, col_idx])
+  MAD_alt2_wide[, col_idx] <- combined_values
+}
+
+for (i in 3:ncol(MAD_alt2_wide)) {
+  MAD_alt2_wide[[i]] <- sapply(MAD_alt2_wide[[i]], bold_if_larger_than_10)
+}
+names(MAD_alt2_wide) <- c("$\\textit{p}$", "$\\textit{N/p}$", paste(rep(c("$\\rho = .70$", "$\\rho = .90$"), length(method_se))))
+
+# Split Table
+MAD_table_1 <- apa_table(list(`$\\gamma = 0$` = MAD_null_wide[,c(1:8)],
+                             `$\\gamma = 0.3$` = MAD_alt1_wide[,c(1:8)],
+                             `$\\gamma = 0.6$` = MAD_alt2_wide[,c(1:8)]),
+                        merge_method = "table_spanner",
+            escape = F,
+            caption = "Robust Relative Standard Error (SE) Bias Ratio and Outlier Proportion of SE ($\\%$) of Path Coefficient Estimates ($\\gamma$) Across 2,000 Replications.",
+            align = c(rep("c", ncol(MAD_null_wide[1:8]))),
+            col_spanners = list(`Joint SEM` = c(3, 4), `Global SAM` = c(5, 6),
+                                `Local SAM` = c(7, 8)),
+            
+            landscape = TRUE,
+            font_size = "tiny")
+MAD_table_1
+```
+
+```{r}
+MAD_table_2 <- apa_table(list(`$\\gamma = 0$` = MAD_null_wide[,c(1:2, 9:16)],
+                             `$\\gamma = 0.3$` = MAD_alt1_wide[,c(1:2, 9:16)],
+                             `$\\gamma = 0.6$` = MAD_alt2_wide[,c(1:2, 9:16)]),
+                        merge_method = "table_spanner",
+            escape = F,
+            caption = "Robust Relative Standard Error (SE) Bias Ratio and Outlier Proportion of SE ($\\%$) of Path Coefficient Estimates ($\\gamma$) Across 2,000 Replications (for 2S-PA Methods).",
+            align = c(rep("c", ncol(MAD_null_wide[,c(1:2, 9:16)]))),
+            col_spanners = list(`2S-PA` = c(3, 4), `2S-PA-Rel` = c(5, 6), 
+                                `2S-PA Corrected` = c(7, 8), `2S-PA-Rel Corrected` = c(9, 10)),
+            
+            landscape = TRUE,
+            font_size = "tiny")
+MAD_table_2
+```
+
+```{r coverage rate, message=FALSE, warning=FALSE}
+# Null Effect
+cov_null <- sim_null %>%
+  dplyr::select(n_items, N_per_p, rel, coverage.joint.est:coverage_corrected.rel.est_corrected) %>%
+  mutate(coverage.joint.est = coverage.joint.est*100,
+         coverage.gsam.est = coverage.gsam.est*100,
+         coverage.lsam.est = coverage.lsam.est*100,
+         coverage.tspa.est = coverage.tspa.est*100,
+         coverage.rel.est = coverage.rel.est*100,
+         coverage_corrected.tspa.est_corrected = coverage_corrected.tspa.est_corrected*100,
+         coverage_corrected.rel.est_corrected = coverage_corrected.rel.est_corrected*100) 
+names(cov_null) <- c(c("$\\textit{p}$", "$\\textit{N/p}$", "$\\rho$"), method_se)
+
+cov_null_wide <- convert_to_wide(cov_null, method_vec = method_se)
+
+for (i in 3:ncol(cov_null_wide)) {
+  cov_null_wide[[i]] <- sapply(cov_null_wide[[i]], bold_if_less_than_91)
+}
+
+names(cov_null_wide) <- c("$\\textit{p}$", "$\\textit{N/p}$", paste(rep(c("$\\rho = .70$", "$\\rho = .90$"), length(method_se))))
+
+# Alternative Effect 1
+cov_alt1 <- sim_alt1 %>% 
+  dplyr::select(n_items, N_per_p, rel, coverage.joint.est:coverage_corrected.rel.est_corrected) %>%
+  mutate(coverage.joint.est = coverage.joint.est*100,
+         coverage.gsam.est = coverage.gsam.est*100,
+         coverage.lsam.est = coverage.lsam.est*100,
+         coverage.tspa.est = coverage.tspa.est*100,
+         coverage.rel.est = coverage.rel.est*100,
+         coverage_corrected.tspa.est_corrected = coverage_corrected.tspa.est_corrected*100,
+         coverage_corrected.rel.est_corrected = coverage_corrected.rel.est_corrected*100) 
+names(cov_alt1) <- c(c("$\\textit{p}$", "$\\textit{N/p}$", "$\\rho$"), method_se)
+
+cov_alt1_wide <- convert_to_wide(cov_alt1, method_vec = method_se)
+
+for (i in 3:ncol(cov_alt1_wide)) {
+  cov_alt1_wide[[i]] <- sapply(cov_alt1_wide[[i]], bold_if_less_than_91)
+}
+names(cov_alt1_wide) <- c("$\\textit{p}$", "$\\textit{N/p}$", paste(rep(c("$\\rho = .70$", "$\\rho = .90$"), length(method_se))))
+
+# Alternative Effect 2
+cov_alt2 <- sim_alt2 %>% 
+  dplyr::select(n_items, N_per_p, rel, coverage.joint.est:coverage_corrected.rel.est_corrected) %>%
+  mutate(coverage.joint.est = coverage.joint.est*100,
+         coverage.gsam.est = coverage.gsam.est*100,
+         coverage.lsam.est = coverage.lsam.est*100,
+         coverage.tspa.est = coverage.tspa.est*100,
+         coverage.rel.est = coverage.rel.est*100,
+         coverage_corrected.tspa.est_corrected = coverage_corrected.tspa.est_corrected*100,
+         coverage_corrected.rel.est_corrected = coverage_corrected.rel.est_corrected*100) 
+names(cov_alt2) <- c(c("$\\textit{p}$", "$\\textit{N/p}$", "$\\rho$"), method_se)
+
+cov_alt2_wide <- convert_to_wide(cov_alt2, method_vec = method_se)
+
+for (i in 3:ncol(cov_alt2_wide)) {
+  cov_alt2_wide[[i]] <- sapply(cov_alt2_wide[[i]], bold_if_less_than_91)
+}
+names(cov_alt2_wide) <- c("$\\textit{p}$", "$\\textit{N/p}$", paste(rep(c("$\\rho = .70$", "$\\rho = .90$"), length(method_se))))
+
+# Table
+cov_table <- apa_table(list(`$\\gamma = 0$` = cov_null_wide,
+                             `$\\gamma = 0.3$` = cov_alt1_wide,
+                             `$\\gamma = 0.6$` = cov_alt2_wide),
+                       merge_method = "table_spanner",
+            escape = F,
+            caption = "Coverage Rate of 95 $\\%$ Confidence Interval (CI) of Path Coefficient Estimates ($\\gamma$) Across 2,000 Replications.",
+            align = c(rep("c", ncol(cov_null_wide))),
+            col_spanners = list(`Joint SEM` = c(3, 4), `Global SAM` = c(5, 6),
+                                `Local SAM` = c(7, 8), `2S-PA` = c(9, 10),
+                                `2S-PA-Rel` = c(11, 12), `2S-PA Corrected` = c(13, 14),
+                                `2S-PA-Rel Corrected` = c(15, 16)),
+            landscape = TRUE,
+            font_size = "tiny")
+
+cov_table
+```
+
+```{r rmse, message=FALSE, warning=FALSE}
+# Null Effect
+rmse_null <- sim_null %>%
+  dplyr::select(n_items, N_per_p, rel, rmse.joint.est:rmse_corrected.rel.est_corrected)
+names(rmse_null) <- c(c("$\\textit{p}$", "$\\textit{N/p}$", "$\\rho$"), method_se)
+
+rmse_null_wide <- convert_to_wide(rmse_null, method_vec = method_se)
+names(rmse_null_wide) <- c("$\\textit{p}$", "$\\textit{N/p}$", paste(rep(c("$\\rho = .70$", "$\\rho = .90$"), length(method_se))))
+
+# Alternative Effect 1
+rmse_alt1 <- sim_alt1 %>%
+  dplyr::select(n_items, N_per_p, rel, rmse.joint.est:rmse_corrected.rel.est_corrected)
+names(rmse_alt1) <- c(c("$\\textit{p}$", "$\\textit{N/p}$", "$\\rho$"), method_se)
+
+rmse_alt1_wide <- convert_to_wide(rmse_alt1, method_vec = method_se)
+names(rmse_alt1_wide) <- c("$\\textit{p}$", "$\\textit{N/p}$", paste(rep(c("$\\rho = .70$", "$\\rho = .90$"), length(method_se))))
+
+# Alternative Effect 2
+rmse_alt2 <- sim_alt2 %>%
+  dplyr::select(n_items, N_per_p, rel, rmse.joint.est:rmse_corrected.rel.est_corrected)
+names(rmse_alt2) <- c(c("$\\textit{p}$", "$\\textit{N/p}$", "$\\rho$"), method_se)
+
+rmse_alt2_wide <- convert_to_wide(rmse_alt2, method_vec = method_se)
+names(rmse_alt2_wide) <- c("$\\textit{p}$", "$\\textit{N/p}$", paste(rep(c("$\\rho = .70$", "$\\rho = .90$"), length(method_se))))
+
+# Table
+rmse_table <- apa_table(list(`$\\gamma = 0$` = rmse_null_wide,
+                             `$\\gamma = 0.3$` = rmse_alt1_wide,
+                             `$\\gamma = 0.6$` = rmse_alt2_wide),
+                       merge_method = "table_spanner",
+            escape = F,
+            caption = "Root Mean Square Error (RMSE) of Latent Interaction Estimates ($\\gamma$) Across 2,000 Replications.",
+            align = c(rep("c", ncol(rmse_null_wide))),
+            col_spanners = list(`Joint SEM` = c(3, 4), `Global SAM` = c(5, 6),
+                                `Local SAM` = c(7, 8), `2S-PA` = c(9, 10),
+                                `2S-PA-Rel` = c(11, 12), `2S-PA Corrected` = c(13, 14),
+                                 `2S-PA-Rel Corrected` = c(15, 16)),
+            landscape = TRUE,
+            font_size = "tiny")
+
+rmse_table
+```
+
+```{r type I error, message=FALSE, warning=FALSE}
+type1_null <- sim_null %>%
+  dplyr::select(n_items, N_per_p, rel, type1.joint.est:type1_corrected.rel.est_corrected)
+names(type1_null) <- c(c("$\\textit{p}$", "$\\textit{N/p}$", "$\\rho$"), method_se)
+
+type1_null_wide <- convert_to_wide(type1_null, method_vec = method_se)
+names(type1_null_wide) <- c("$\\textit{p}$", "$\\textit{N/p}$", paste(rep(c("$\\rho = .70$", "$\\rho = .90$"), length(method_se))))
+```
+
+```{r power, message=FALSE, warning=FALSE}
+power_alt1 <- sim_alt1 %>%
+  dplyr::select(n_items, N_per_p, rel, power.joint.est:power_corrected.rel.est_corrected)
+names(power_alt1) <- c(c("$\\textit{p}$", "$\\textit{N/p}$", "$\\rho$"), method_se)
+
+power_alt1_wide <- convert_to_wide(power_alt1, method_vec = method_se)
+names(power_alt1_wide) <- c("$\\textit{p}$", "$\\textit{N/p}$", paste(rep(c("$\\rho = .70$", "$\\rho = .90$"), length(method_se))))
+
+power_alt2 <- sim_alt2 %>%
+  dplyr::select(n_items, N_per_p, rel, power.joint.est:power_corrected.rel.est_corrected)
+names(power_alt2) <- c(c("$\\textit{p}$", "$\\textit{N/p}$", "$\\rho$"), method_se)
+
+power_alt2_wide <- convert_to_wide(power_alt2, method_vec = method_se)
+names(power_alt2_wide) <- c("$\\textit{p}$", "$\\textit{N/p}$", paste(rep(c("$\\rho = .70$", "$\\rho = .90$"), length(method_se))))
+
+type1_power_table <- apa_table(
+  list(`Empirical Type I Error Rate ($\\gamma = 0$)` = type1_null_wide,
+       `Statistical Power ($\\gamma = 0.3$)` = power_alt1_wide,
+       `Statistical Power ($\\gamma = 0.6$)` = power_alt2_wide), 
+  merge_method = "table_spanner",
+            escape = F,
+            caption = "Empirical Type I Error Rate and Statistical Power Across 2,000 Replications.",
+            align = c(rep("c", ncol(type1_null_wide))),
+            col_spanners = list(`Joint SEM` = c(3, 4), `Global SAM` = c(5, 6),
+                                `Local SAM` = c(7, 8), `2S-PA` = c(9, 10),
+                                `2S-PA-Rel` = c(11, 12), `2S-PA Corrected` = c(13, 14),
+                                 `2S-PA-Rel Corrected` = c(15, 16)),
+            landscape = TRUE,
+            font_size = "tiny")
+
+type1_power_table
+```

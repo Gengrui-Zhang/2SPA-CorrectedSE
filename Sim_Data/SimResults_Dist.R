@@ -1,12 +1,10 @@
 # Read Data
 library(here)
-dat_dir <- here("Sim_Data", "CorrectedSE_10212024_Raw")
+dat_dir <- here("Sim_Data", "CorrectedSE_11112024_Raw")
 
-# Wrong order: Define the name directly
 # List all files matching the pattern
-dat_list <- list.files(path = dat_dir, pattern = "results-row-.*\\.rds", full.names = TRUE)
-file_numbers <- as.numeric(gsub(".*results-row-([0-9]+)\\.rds", "\\1", dat_list))
-dat_list <- dat_list[order(file_numbers)]
+files <- list.files(path = dat_dir, pattern = "results-row-.*\\.rds", full.names = TRUE)
+dat_list <- files[order(as.numeric(gsub(".*results-row-(\\d+)\\.rds", "\\1", files)))]
 
 results_list <- lapply(dat_list, function(file) {
   data <- readRDS(file)
@@ -53,11 +51,11 @@ se_corrected_list <- lapply(data_list, extract_columns, column_names = column_na
 se_corrected_list <- remove_na_columns(se_corrected_list)
 
 # Examine Condition
-# Condition 3
-est <- est_list[[3]]
-se <- se_list[[3]]
-est_corrected <- est_list[[3]][c("tspa.est", "rel.est")]
-se_corrected <- se_corrected_list[[3]]
+# Condition 1
+est <- est_list[[1]]
+se <- se_list[[1]]
+est_corrected <- est_list[[1]][c("tspa.est", "rel.est")]
+se_corrected <- se_corrected_list[[1]]
 
 # Density Plot
 par(mfrow = c(2, 3))

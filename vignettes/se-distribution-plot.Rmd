@@ -1,0 +1,127 @@
+---
+title: "Standard Error Distribution"
+author: "Jimmy Zhang"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r packages, echo=TRUE, message=FALSE, warning=FALSE}
+library(here)
+library(dplyr)
+library(tidyr)
+library(forcats)
+library(readr)
+library(ggplot2)
+library(rlang)
+```
+
+```{r import data}
+# Read data
+dat_dir <- here("Sim_Data", "CorrectedSE_11112024_Raw")
+
+# List all files matching the pattern
+files <- list.files(path = dat_dir, pattern = "results-row-.*\\.rds", full.names = TRUE)
+dat_list <- files[order(as.numeric(gsub(".*results-row-(\\d+)\\.rds", "\\1", files)))]
+
+results_list <- lapply(dat_list, function(file) {
+  data <- readRDS(file)
+})
+
+data_list <- lapply(dat_list, function(file) {
+  data <- readRDS(file)
+  data[["results"]]  
+})
+
+condition_list <- do.call(rbind, lapply(dat_list, function(file) {
+  data <- readRDS(file)
+  data[["condition"]]  
+}))
+```
+
+```{r helper function, include=FALSE}
+# Examine SE
+extract_columns <- function(data, column_names, suffix) {
+  columns <- setNames(
+    lapply(column_names, function(name) {
+      col_name <- paste0(name, suffix)
+      if (col_name %in% names(data)) {
+        return(data[[col_name]])
+      } else {
+        warning(paste("Column", col_name, "not found in the data. Returning NA."))
+        return(rep(NA, nrow(data)))
+      }
+    }),
+    paste0(column_names, suffix)
+  )
+  data.frame(columns)
+}
+
+remove_na_columns <- function(df_list) {
+  lapply(df_list, function(df) {
+    # Remove columns with all NA values
+    df[, colSums(is.na(df)) < nrow(df)]
+  })
+}
+```
+
+```{r extract se, include=FALSE}
+column_names <- c("joint", "gsam", "lsam", "tspa", "rel")
+est_list <- lapply(data_list, extract_columns, column_names = column_names, suffix = ".est")
+se_list <- lapply(data_list, extract_columns, column_names = column_names, suffix = ".se")
+se_corrected_list <- lapply(data_list, extract_columns, column_names = column_names, suffix = ".se_corrected")
+se_corrected_list <- remove_na_columns(se_corrected_list)
+```
+
+Standard error distributions are examined under conditions with small sample size (i.e., 30, 60, 120) with low reliability ($\rho = 0.7$).
+
+## Condition 1: $\beta = 0$, $\textit{N}$ = 30, $\rho = 0.7$
+
+```{r conditional data}
+est <- cbind(est_list[[1]], est_list[[1]][c("tspa.est", "rel.est")])
+se <- cbind(se_list[[1]], se_corrected_list[[1]])
+```
+
+```{r se density plot }
+# SE Density Plot
+par(mfrow = c(3, 3), mar = c(4, 4, 2, 1))
+for (i in 1:ncol(se)) {
+  emp_sd <- sd(est[[i]], na.rm = TRUE)
+  mean_se <- mean(se[[i]], na.rm = TRUE)  # Calculate the mean
+
+  plot(density(se[[i]], na.rm = TRUE), 
+       main = paste("Density Plot of SE -", colnames(se)[i]), 
+       xlab = "SE", 
+       col = "blue", 
+       lwd = 2,
+       xlim = c(0.1, 0.7),  
+       ylim = c(1, 20),
+       cex.main = 0.8)     
+  
+  axis(1, at = seq(0.1, 0.7, by = 0.1))
+  
+  abline(v = emp_sd, col = "red", lwd = 2, lty = 2)
+  abline(v = mean_se, col = "green", lwd = 2, lty = 2)
+}
+par(mfrow = c(1, 1))
+```
+
+The green line represents the mean of estimated standard errors, while the red line is the empirical standard deviation of path coefficients. The green line (mean standard error) is consistently positioned to the left of the red line (empirical standard deviation), indicating that the model underestimates the true standard error. 
+
+However, the magnitude of this underestimation varies between methods:
+
+- gsam.se and lsam.se: The difference between the red and green lines is relatively small compared to other methods, indicating that these methods might provide a closer estimate of the true variability.
+- rel.se and tspa.se_corrected: There is a more substantial difference between the red and green lines, suggesting that these methods tend to underestimate the standard error more compared to others.
+
+For shape and spread of density curves:
+
+- The density curves for joint.se, gsam.se, lsam.se, and tspa.se are relatively similar, with a peak around 0.2 to 0.3 and a sharp decline, indicating that these methods have similar distributions of standard errors.
+- The tspa.se_corrected and rel.se methods show a slightly broader spread, suggesting greater variability in the calculated standard errors. This could imply that
+
+
+
+
+

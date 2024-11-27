@@ -1,5 +1,5 @@
 ---
-title             : "Two Stage Path Analysis with Corrected Standard Error"
+title             : "Two Stage Path Analysis with Corrected Standard Error (Updated lavaan)"
 shorttitle        : "2S-PA with Corrected SE"
 
 author: 
@@ -224,6 +224,132 @@ rbsb_table <- apa_table(list(`$\\gamma = 0$` = rbsb_null,
 rbsb_table
 ```
 
+```{r RAW relative SE bias with outliers proportion, message=FALSE, warning=FALSE}
+# Null Effect
+raw_null <- sim_null %>% 
+  dplyr::select(n_items, N_per_p, rel, raw_rsb.joint.se:raw_rsb_corrected.rel.se_corrected) %>%
+  mutate(raw_rsb.joint.se = raw_rsb.joint.se*100,
+         raw_rsb.gsam.se = raw_rsb.gsam.se*100,
+         raw_rsb.lsam.se = raw_rsb.lsam.se*100,
+         raw_rsb.tspa.se = raw_rsb.tspa.se*100,
+         raw_rsb.rel.se = raw_rsb.rel.se*100,
+         raw_rsb_corrected.tspa.se_corrected = raw_rsb_corrected.tspa.se_corrected*100,
+         raw_rsb_corrected.rel.se_corrected = raw_rsb_corrected.rel.se_corrected*100)
+names(raw_null) <- c(c("$\\textit{p}$", "$\\textit{N/p}$", "$\\rho$"), method_se)
+
+raw_null_wide <- convert_to_wide(raw_null, method_vec = method_se)
+
+outse_null <- sim_null %>% 
+  dplyr::select(n_items, N_per_p, rel, out_se.joint.se:out_se_corrected.rel.se_corrected)
+names(outse_null) <- c(c("$\\textit{p}$", "$\\textit{N/p}$", "$\\rho$"), method_se)
+
+outse_null_wide <- convert_to_wide(outse_null, method_vec = method_se)
+
+for (col_idx in 3:ncol(raw_null_wide)) {
+  combined_values <- mapply(FUN = function(x, y) paste(y, "\ (", x, ")", sep = ""),
+                            x = outse_null_wide[, col_idx], y = raw_null_wide[, col_idx])
+  raw_null_wide[, col_idx] <- combined_values
+}
+
+for (i in 3:ncol(raw_null_wide)) {
+  raw_null_wide[[i]] <- sapply(raw_null_wide[[i]], bold_if_larger_than_10)
+}
+names(raw_null_wide) <- c("$\\textit{p}$", "$\\textit{N/p}$", paste(rep(c("$\\rho = .70$", "$\\rho = .90$"), length(method_se))))
+
+# Alternative Effect 1
+raw_alt1 <- sim_alt1 %>% 
+  dplyr::select(n_items, N_per_p, rel, raw_rsb.joint.se:raw_rsb_corrected.rel.se_corrected) %>%
+  mutate(raw_rsb.joint.se = raw_rsb.joint.se*100,
+         raw_rsb.gsam.se = raw_rsb.gsam.se*100,
+         raw_rsb.lsam.se = raw_rsb.lsam.se*100,
+         raw_rsb.tspa.se = raw_rsb.tspa.se*100,
+         raw_rsb.rel.se = raw_rsb.rel.se*100,
+         raw_rsb_corrected.tspa.se_corrected = raw_rsb_corrected.tspa.se_corrected*100,
+         raw_rsb_corrected.rel.se_corrected = raw_rsb_corrected.rel.se_corrected*100)
+names(raw_alt1) <- c(c("$\\textit{p}$", "$\\textit{N/p}$", "$\\rho$"), method_se)
+
+raw_alt1_wide <- convert_to_wide(raw_alt1, method_vec = method_se)
+
+outse_alt1 <- sim_alt1 %>% 
+  dplyr::select(n_items, N_per_p, rel, out_se.joint.se:out_se_corrected.rel.se_corrected)
+names(outse_alt1) <- c(c("$\\textit{p}$", "$\\textit{N/p}$", "$\\rho$"), method_se)
+
+outse_alt1_wide <- convert_to_wide(outse_alt1, method_vec = method_se)
+
+for (col_idx in 3:ncol(raw_alt1_wide)) {
+  combined_values <- mapply(FUN = function(x, y) paste(y, "\ (", x, ")", sep = ""),
+                            x = outse_alt1_wide[, col_idx], y = raw_alt1_wide[, col_idx])
+  raw_alt1_wide[, col_idx] <- combined_values
+}
+
+for (i in 3:ncol(raw_alt1_wide)) {
+  raw_alt1_wide[[i]] <- sapply(raw_alt1_wide[[i]], bold_if_larger_than_10)
+}
+names(raw_alt1_wide) <- c("$\\textit{p}$", "$\\textit{N/p}$", paste(rep(c("$\\rho = .70$", "$\\rho = .90$"), length(method_se))))
+
+# Alternative Effect 2
+raw_alt2 <- sim_alt2 %>% 
+  dplyr::select(n_items, N_per_p, rel, raw_rsb.joint.se:raw_rsb_corrected.rel.se_corrected) %>%
+  mutate(raw_rsb.joint.se = raw_rsb.joint.se*100,
+         raw_rsb.gsam.se = raw_rsb.gsam.se*100,
+         raw_rsb.lsam.se = raw_rsb.lsam.se*100,
+         raw_rsb.tspa.se = raw_rsb.tspa.se*100,
+         raw_rsb.rel.se = raw_rsb.rel.se*100,
+         raw_rsb_corrected.tspa.se_corrected = raw_rsb_corrected.tspa.se_corrected*100,
+         raw_rsb_corrected.rel.se_corrected = raw_rsb_corrected.rel.se_corrected*100)
+names(raw_alt2) <- c(c("$\\textit{p}$", "$\\textit{N/p}$", "$\\rho$"), method_se)
+
+raw_alt2_wide <- convert_to_wide(raw_alt2, method_vec = method_se)
+
+outse_alt2 <- sim_alt2 %>% 
+  dplyr::select(n_items, N_per_p, rel, out_se.joint.se:out_se_corrected.rel.se_corrected)
+names(outse_alt2) <- c(c("$\\textit{p}$", "$\\textit{N/p}$", "$\\rho$"), method_se)
+
+outse_alt2_wide <- convert_to_wide(outse_alt2, method_vec = method_se)
+
+for (col_idx in 3:ncol(raw_alt2_wide)) {
+  combined_values <- mapply(FUN = function(x, y) paste(y, "\ (", x, ")", sep = ""),
+                            x = outse_alt2_wide[, col_idx], y = raw_alt2_wide[, col_idx])
+  raw_alt2_wide[, col_idx] <- combined_values
+}
+
+for (i in 3:ncol(raw_alt2_wide)) {
+  raw_alt2_wide[[i]] <- sapply(raw_alt2_wide[[i]], bold_if_larger_than_10)
+}
+names(raw_alt2_wide) <- c("$\\textit{p}$", "$\\textit{N/p}$", paste(rep(c("$\\rho = .70$", "$\\rho = .90$"), length(method_se))))
+
+# Split Table
+raw_table_1 <- apa_table(list(`$\\gamma = 0$` = raw_null_wide[,c(1:8)],
+                             `$\\gamma = 0.3$` = raw_alt1_wide[,c(1:8)],
+                             `$\\gamma = 0.6$` = raw_alt2_wide[,c(1:8)]),
+                        merge_method = "table_spanner",
+            escape = F,
+            caption = "Raw Relative Standard Error (SE) Bias Ratio and Outlier Proportion of SE ($\\%$) of Path Coefficient Estimates ($\\gamma$) Across 2,000 Replications.",
+            align = c(rep("c", ncol(raw_null_wide[1:8]))),
+            col_spanners = list(`Joint SEM` = c(3, 4), `Global SAM` = c(5, 6),
+                                `Local SAM` = c(7, 8)),
+            
+            landscape = TRUE,
+            font_size = "tiny")
+raw_table_1
+```
+
+```{r RAW relative SE bias with outliers proportion (2SPA), message=FALSE, warning=FALSE}
+raw_table_2 <- apa_table(list(`$\\gamma = 0$` = raw_null_wide[,c(1:2, 9:16)],
+                             `$\\gamma = 0.3$` = raw_alt1_wide[,c(1:2, 9:16)],
+                             `$\\gamma = 0.6$` = raw_alt2_wide[,c(1:2, 9:16)]),
+                        merge_method = "table_spanner",
+            escape = F,
+            caption = "Raw Relative Standard Error (SE) Bias Ratio and Outlier Proportion of SE ($\\%$) of Path Coefficient Estimates ($\\gamma$) Across 2,000 Replications (for 2S-PA Methods).",
+            align = c(rep("c", ncol(raw_null_wide[,c(1:2, 9:16)]))),
+            col_spanners = list(`2S-PA` = c(3, 4), `2S-PA-Rel` = c(5, 6), 
+                                `2S-PA Corrected` = c(7, 8), `2S-PA-Rel Corrected` = c(9, 10)),
+            
+            landscape = TRUE,
+            font_size = "tiny")
+raw_table_2
+```
+
 ```{r MAD relative SE bias with outliers proportion, message=FALSE, warning=FALSE}
 # Null Effect
 MAD_null <- sim_null %>% 
@@ -334,7 +460,7 @@ MAD_table_1 <- apa_table(list(`$\\gamma = 0$` = MAD_null_wide[,c(1:8)],
 MAD_table_1
 ```
 
-```{r}
+```{r MAD relative SE bias with outliers proportion (2SPA), message=FALSE, warning=FALSE}
 MAD_table_2 <- apa_table(list(`$\\gamma = 0$` = MAD_null_wide[,c(1:2, 9:16)],
                              `$\\gamma = 0.3$` = MAD_alt1_wide[,c(1:2, 9:16)],
                              `$\\gamma = 0.6$` = MAD_alt2_wide[,c(1:2, 9:16)]),

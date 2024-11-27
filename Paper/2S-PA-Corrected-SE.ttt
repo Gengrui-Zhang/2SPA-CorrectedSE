@@ -60,6 +60,120 @@ $\textit{p}$ & \multicolumn{1}{c}{$\textit{N/p}$} & \multicolumn{1}{c}{$\rho = .
 \tiny{
 
 \begin{longtable}{cccccccc}\noalign{\getlongtablewidth\global\LTcapwidth=\longtablewidth}
+\caption{\label{tab:RAW relative SE bias with outliers proportion}Raw Relative Standard Error (SE) Bias Ratio and Outlier Proportion of SE ($\%$) of Path Coefficient Estimates ($\gamma$) Across 2,000 Replications.}\\
+\toprule
+ &  & \multicolumn{2}{c}{Joint SEM} & \multicolumn{2}{c}{Global SAM} & \multicolumn{2}{c}{Local SAM} \\
+\cmidrule(r){3-4} \cmidrule(r){5-6} \cmidrule(r){7-8}
+$\textit{p}$ & \multicolumn{1}{c}{$\textit{N/p}$} & \multicolumn{1}{c}{$\rho = .70$} & \multicolumn{1}{c}{$\rho = .90$} & \multicolumn{1}{c}{$\rho = .70$} & \multicolumn{1}{c}{$\rho = .90$} & \multicolumn{1}{c}{$\rho = .70$} & \multicolumn{1}{c}{$\rho = .90$}\\
+\midrule
+\endfirsthead
+\caption*{\normalfont{Table \ref{tab:RAW relative SE bias with outliers proportion} continued}}\\
+\toprule
+ &  & \multicolumn{2}{c}{Joint SEM} & \multicolumn{2}{c}{Global SAM} & \multicolumn{2}{c}{Local SAM} \\
+\cmidrule(r){3-4} \cmidrule(r){5-6} \cmidrule(r){7-8}
+$\textit{p}$ & \multicolumn{1}{c}{$\textit{N/p}$} & \multicolumn{1}{c}{$\rho = .70$} & \multicolumn{1}{c}{$\rho = .90$} & \multicolumn{1}{c}{$\rho = .70$} & \multicolumn{1}{c}{$\rho = .90$} & \multicolumn{1}{c}{$\rho = .70$} & \multicolumn{1}{c}{$\rho = .90$}\\
+\midrule
+\endhead
+\multicolumn{8}{c}{$\gamma = 0$}\\
+5 & 6 & \textbf{-27.10 (4.25)} & -9.67 (5.70) & -7.75 (1.50) & -5.79 (5.75) & -7.75 (1.50) & -5.79 (5.75)\\
+ & 25 & -6.61 (1.80) & -2.96 (3.00) & -2.55 (1.55) & -2.30 (2.95) & -2.55 (1.55) & -2.30 (2.95)\\
+ & 100 & -1.40 (1.25) & 0.39 (1.00) & -0.47 (1.30) & 0.56 (0.95) & -0.47 (1.30) & 0.56 (0.95)\\
+10 & 6 & \textbf{-12.17 (2.45)} & -2.54 (5.25) & -4.42 (1.85) & -1.39 (5.20) & -4.42 (1.85) & -1.39 (5.20)\\
+ & 25 & -0.61 (1.30) & -3.16 (3.35) & 1.14 (1.25) & -2.92 (3.35) & 1.14 (1.25) & -2.92 (3.35)\\
+ & 100 & -2.44 (1.00) & 1.95 (1.30) & -2.08 (1.00) & 2.01 (1.30) & -2.08 (1.00) & 2.01 (1.30)\\
+20 & 6 & -5.33 (1.85) & -4.37 (5.90) & -1.89 (1.85) & -4.00 (5.80) & -1.89 (1.85) & -4.00 (5.80)\\
+ & 25 & -0.46 (0.60) & 2.47 (2.00) & 0.30 (0.65) & 2.56 (2.05) & 0.30 (0.65) & 2.56 (2.05)\\
+ & 100 & -2.80 (0.60) & 0.80 (0.85) & -2.64 (0.60) & 0.82 (0.85) & -2.64 (0.60) & 0.82 (0.85)\\
+\multicolumn{8}{c}{$\gamma = 0.3$}\\
+5 & 6 & \textbf{-31.59 (2.00)} & -9.49 (1.85) & \textbf{-14.55 (2.20)} & -5.77 (2.05) & \textbf{-14.55 (2.20)} & -5.77 (2.05)\\
+ & 25 & -3.48 (1.35) & -1.89 (0.85) & 0.53 (1.50) & -1.18 (0.90) & 0.53 (1.50) & -1.18 (0.90)\\
+ & 100 & 0.96 (0.95) & 0.18 (1.00) & 1.85 (0.85) & 0.31 (1.00) & 1.85 (0.85) & 0.31 (1.00)\\
+10 & 6 & \textbf{-29.33 (2.10)} & -3.95 (1.50) & \textbf{-23.37 (1.75)} & -2.74 (1.60) & \textbf{-23.37 (1.75)} & -2.74 (1.60)\\
+ & 25 & -5.58 (0.55) & 2.33 (1.00) & -3.87 (0.75) & 2.60 (1.00) & -3.87 (0.75) & 2.60 (1.00)\\
+ & 100 & -2.28 (1.10) & -2.71 (0.70) & -1.76 (1.10) & -2.64 (0.70) & -1.76 (1.10) & -2.64 (0.70)\\
+20 & 6 & \textbf{-49.06 (1.60)} & -5.56 (1.75) & \textbf{-47.43 (1.35)} & -5.12 (1.75) & \textbf{-47.43 (1.35)} & -5.12 (1.75)\\
+ & 25 & -8.00 (0.75) & -6.55 (1.00) & -7.25 (0.75) & -6.47 (1.00) & -7.25 (0.75) & -6.47 (1.00)\\
+ & 100 & -0.60 (1.40) & -1.84 (0.90) & -0.64 (1.20) & -1.82 (0.90) & -0.64 (1.20) & -1.82 (0.90)\\
+\multicolumn{8}{c}{$\gamma = 0.6$}\\
+5 & 6 & \textbf{-41.10 (1.20)} & \textbf{-10.75 (0.05)} & \textbf{-31.59 (1.60)} & -6.37 (0.10) & \textbf{-31.59 (1.60)} & -6.37 (0.10)\\
+ & 25 & -7.27 (0.50) & -2.27 (0.25) & -3.63 (0.70) & -1.56 (0.25) & -3.63 (0.70) & -1.56 (0.25)\\
+ & 100 & -1.65 (0.80) & -0.28 (1.00) & -0.77 (0.65) & -0.17 (1.00) & -0.77 (0.65) & -0.17 (1.00)\\
+10 & 6 & \textbf{-60.03 (0.45)} & \textbf{-14.02 (0.35)} & \textbf{-58.83 (0.85)} & \textbf{-12.61 (0.35)} & \textbf{-58.83 (0.85)} & \textbf{-12.61 (0.35)}\\
+ & 25 & \textbf{-21.16 (0.65)} & -1.83 (0.85) & \textbf{-19.43 (0.65)} & -1.46 (0.90) & \textbf{-19.43 (0.65)} & -1.46 (0.90)\\
+ & 100 & -1.31 (0.80) & -1.30 (0.75) & -0.77 (0.75) & -1.20 (0.70) & -0.77 (0.75) & -1.20 (0.70)\\
+20 & 6 & \textbf{-76.99 (0.40)} & \textbf{-21.70 (0.50)} & \textbf{-76.75 (0.30)} & \textbf{-21.19 (0.50)} & \textbf{-76.75 (0.30)} & \textbf{-21.19 (0.50)}\\
+ & 25 & \textbf{-40.08 (1.00)} & -2.97 (0.75) & \textbf{-43.62 (1.00)} & -2.86 (0.75) & \textbf{-43.62 (1.00)} & -2.86 (0.75)\\
+ & 100 & -0.40 (0.55) & 1.73 (0.95) & -0.30 (0.55) & 1.76 (0.95) & -0.30 (0.55) & 1.76 (0.95)\\
+\bottomrule
+\end{longtable}
+
+}
+
+\end{lltable}
+\efloatseparator
+ 
+\begin{lltable}
+
+\tiny{
+
+\begin{longtable}{cccccccccc}\noalign{\getlongtablewidth\global\LTcapwidth=\longtablewidth}
+\caption{\label{tab:RAW relative SE bias with outliers proportion (2SPA)}Raw Relative Standard Error (SE) Bias Ratio and Outlier Proportion of SE ($\%$) of Path Coefficient Estimates ($\gamma$) Across 2,000 Replications (for 2S-PA Methods).}\\
+\toprule
+ &  & \multicolumn{2}{c}{2S-PA} & \multicolumn{2}{c}{2S-PA-Rel} & \multicolumn{2}{c}{2S-PA Corrected} & \multicolumn{2}{c}{2S-PA-Rel Corrected} \\
+\cmidrule(r){3-4} \cmidrule(r){5-6} \cmidrule(r){7-8} \cmidrule(r){9-10}
+$\textit{p}$ & \multicolumn{1}{c}{$\textit{N/p}$} & \multicolumn{1}{c}{$\rho = .70$} & \multicolumn{1}{c}{$\rho = .90$} & \multicolumn{1}{c}{$\rho = .70$} & \multicolumn{1}{c}{$\rho = .90$} & \multicolumn{1}{c}{$\rho = .70$} & \multicolumn{1}{c}{$\rho = .90$} & \multicolumn{1}{c}{$\rho = .70$} & \multicolumn{1}{c}{$\rho = .90$}\\
+\midrule
+\endfirsthead
+\caption*{\normalfont{Table \ref{tab:RAW relative SE bias with outliers proportion (2SPA)} continued}}\\
+\toprule
+ &  & \multicolumn{2}{c}{2S-PA} & \multicolumn{2}{c}{2S-PA-Rel} & \multicolumn{2}{c}{2S-PA Corrected} & \multicolumn{2}{c}{2S-PA-Rel Corrected} \\
+\cmidrule(r){3-4} \cmidrule(r){5-6} \cmidrule(r){7-8} \cmidrule(r){9-10}
+$\textit{p}$ & \multicolumn{1}{c}{$\textit{N/p}$} & \multicolumn{1}{c}{$\rho = .70$} & \multicolumn{1}{c}{$\rho = .90$} & \multicolumn{1}{c}{$\rho = .70$} & \multicolumn{1}{c}{$\rho = .90$} & \multicolumn{1}{c}{$\rho = .70$} & \multicolumn{1}{c}{$\rho = .90$} & \multicolumn{1}{c}{$\rho = .70$} & \multicolumn{1}{c}{$\rho = .90$}\\
+\midrule
+\endhead
+\multicolumn{10}{c}{$\gamma = 0$}\\
+5 & 6 & \textbf{-17.99 (10.55)} & -8.77 (7.25) & \textbf{-17.74 (9.55)} & -8.48 (7.25) & \textbf{-10.62 (11.10)} & -8.71 (7.15) & \textbf{-16.50 (9.70)} & -8.29 (7.20)\\
+ & 25 & -6.65 (1.85) & -2.96 (3.00) & -6.40 (1.95) & -2.88 (2.80) & -6.44 (1.85) & -2.95 (3.00) & -6.29 (1.85) & -2.88 (2.75)\\
+ & 100 & -1.41 (1.20) & 0.39 (1.05) & -1.35 (1.20) & 0.41 (1.05) & -1.37 (1.25) & 0.39 (1.00) & -1.33 (1.25) & 0.41 (1.05)\\
+10 & 6 & \textbf{-11.96 (2.80)} & -2.54 (5.25) & \textbf{-11.49 (1.80)} & -2.41 (5.10) & \textbf{-11.69 (2.25)} & -2.53 (5.20) & \textbf{-11.36 (1.55)} & -2.40 (5.10)\\
+ & 25 & -0.61 (1.35) & -3.16 (3.35) & -0.50 (1.15) & -3.13 (3.00) & -0.56 (1.15) & -3.16 (3.35) & -0.47 (1.10) & -3.12 (3.00)\\
+ & 100 & -2.44 (1.00) & 1.95 (1.30) & -2.42 (1.00) & 1.96 (1.25) & -2.43 (1.00) & 1.95 (1.25) & -2.41 (1.00) & 1.96 (1.25)\\
+20 & 6 & -5.28 (1.85) & -4.38 (5.90) & -5.11 (1.70) & -4.32 (5.50) & -5.24 (1.90) & -4.37 (5.90) & -5.08 (1.65) & -4.32 (5.45)\\
+ & 25 & -0.46 (0.60) & 2.47 (2.00) & -0.42 (0.60) & 2.48 (1.95) & -0.45 (0.60) & 2.47 (2.00) & -0.41 (0.55) & 2.48 (2.00)\\
+ & 100 & -2.80 (0.60) & 0.80 (0.85) & -2.79 (0.60) & 0.81 (0.75) & -2.80 (0.60) & 0.80 (0.85) & -2.79 (0.60) & 0.81 (0.75)\\
+\multicolumn{10}{c}{$\gamma = 0.3$}\\
+5 & 6 & \textbf{-28.21 (8.45)} & -8.66 (2.30) & \textbf{-27.30 (8.55)} & -7.83 (2.25) & \textbf{-20.40 (9.50)} & -8.50 (2.25) & \textbf{-25.64 (8.65)} & -7.54 (2.40)\\
+ & 25 & -3.75 (1.35) & -1.92 (0.90) & -2.15 (1.70) & -1.14 (0.95) & -2.27 (1.85) & -1.83 (0.90) & -1.38 (1.70) & -1.07 (0.95)\\
+ & 100 & 0.74 (0.95) & 0.16 (1.00) & 2.33 (1.25) & 0.92 (1.05) & 1.96 (1.00) & 0.24 (1.00) & 2.97 (1.00) & 0.99 (1.05)\\
+10 & 6 & \textbf{-35.03 (2.15)} & -3.96 (1.55) & \textbf{-33.84 (2.00)} & -3.20 (1.60) & \textbf{-34.27 (1.95)} & -3.89 (1.50) & \textbf{-33.45 (1.90)} & -3.14 (1.65)\\
+ & 25 & -8.38 (0.55) & 2.33 (1.00) & -6.96 (0.80) & 3.05 (1.20) & -7.65 (0.75) & 2.38 (1.00) & -6.56 (0.85) & 3.10 (1.15)\\
+ & 100 & -2.35 (1.10) & -2.72 (0.70) & -0.87 (1.15) & -2.04 (0.85) & -1.61 (0.95) & -2.67 (0.70) & -0.46 (1.25) & -2.00 (0.85)\\
+20 & 6 & \textbf{-52.65 (1.60)} & -5.59 (1.75) & \textbf{-51.97 (1.20)} & -5.05 (1.80) & \textbf{-52.45 (1.25)} & -5.56 (1.70) & \textbf{-51.84 (1.10)} & -5.03 (1.80)\\
+ & 25 & \textbf{-21.83 (0.75)} & -6.55 (1.00) & \textbf{-20.78 (0.75)} & -6.04 (0.95) & \textbf{-21.53 (0.80)} & -6.52 (1.00) & \textbf{-20.59 (0.80)} & -6.02 (0.90)\\
+ & 100 & -0.63 (1.40) & -1.84 (0.90) & 0.70 (1.40) & -1.31 (0.90) & -0.25 (1.35) & -1.82 (0.90) & 0.94 (1.35) & -1.29 (0.90)\\
+\multicolumn{10}{c}{$\gamma = 0.6$}\\
+5 & 6 & \textbf{-50.79 (4.85)} & \textbf{-11.85 (0.05)} & \textbf{-55.61 (4.70)} & -8.64 (0.20) & \textbf{423.27 (7.80)} & \textbf{-11.03 (0.15)} & \textbf{-17.88 (5.65)} & -7.99 (0.15)\\
+ & 25 & \textbf{-12.11 (0.60)} & -2.44 (0.25) & -5.93 (0.80) & 1.37 (0.25) & -4.70 (1.10) & -1.75 (0.25) & -2.25 (0.80) & 1.93 (0.35)\\
+ & 100 & -2.81 (0.85) & -0.44 (1.00) & 4.04 (0.70) & 3.51 (0.90) & 4.30 (0.60) & 0.23 (0.95) & 7.61 (0.70) & 4.05 (0.90)\\
+10 & 6 & \textbf{-67.14 (0.45)} & \textbf{-14.07 (0.35)} & \textbf{-64.87 (0.70)} & \textbf{-10.94 (0.35)} & \textbf{-65.21 (0.65)} & \textbf{-13.64 (0.35)} & \textbf{-63.86 (0.60)} & \textbf{-10.59 (0.35)}\\
+ & 25 & \textbf{-16.06 (0.65)} & -1.88 (0.85) & \textbf{-10.15 (0.80)} & 1.76 (0.90) & \textbf{-11.68 (0.95)} & -1.41 (0.85) & -7.85 (0.90) & 2.14 (0.90)\\
+ & 100 & -1.72 (0.90) & -1.35 (0.75) & 5.18 (0.50) & 2.30 (0.80) & 3.29 (0.60) & -0.89 (0.75) & 7.82 (0.60) & 2.68 (0.80)\\
+20 & 6 & \textbf{-78.85 (0.40)} & \textbf{-26.14 (0.45)} & \textbf{-77.49 (0.40)} & \textbf{-24.03 (0.40)} & \textbf{-78.26 (0.35)} & \textbf{-25.96 (0.45)} & \textbf{-77.13 (0.40)} & \textbf{-23.88 (0.40)}\\
+ & 25 & \textbf{-48.10 (1.00)} & -2.98 (0.75) & \textbf{-44.72 (0.90)} & -0.17 (0.70) & \textbf{-46.63 (0.85)} & -2.75 (0.75) & \textbf{-43.83 (0.75)} & 0.03 (0.65)\\
+ & 100 & -0.55 (0.55) & 1.72 (0.95) & 5.97 (0.50) & 4.69 (0.95) & 2.29 (0.55) & 1.97 (0.95) & 7.69 (0.55) & 4.91 (0.95)\\
+\bottomrule
+\end{longtable}
+
+}
+
+\end{lltable}
+\efloatseparator
+ 
+\begin{lltable}
+
+\tiny{
+
+\begin{longtable}{cccccccc}\noalign{\getlongtablewidth\global\LTcapwidth=\longtablewidth}
 \caption{\label{tab:MAD relative SE bias with outliers proportion}Robust Relative Standard Error (SE) Bias Ratio and Outlier Proportion of SE ($\%$) of Path Coefficient Estimates ($\gamma$) Across 2,000 Replications.}\\
 \toprule
  &  & \multicolumn{2}{c}{Joint SEM} & \multicolumn{2}{c}{Global SAM} & \multicolumn{2}{c}{Local SAM} \\
@@ -117,14 +231,14 @@ $\textit{p}$ & \multicolumn{1}{c}{$\textit{N/p}$} & \multicolumn{1}{c}{$\rho = .
 \tiny{
 
 \begin{longtable}{cccccccccc}\noalign{\getlongtablewidth\global\LTcapwidth=\longtablewidth}
-\caption{\label{tab:unnamed-chunk-2}Robust Relative Standard Error (SE) Bias Ratio and Outlier Proportion of SE ($\%$) of Path Coefficient Estimates ($\gamma$) Across 2,000 Replications (for 2S-PA Methods).}\\
+\caption{\label{tab:MAD relative SE bias with outliers proportion (2SPA)}Robust Relative Standard Error (SE) Bias Ratio and Outlier Proportion of SE ($\%$) of Path Coefficient Estimates ($\gamma$) Across 2,000 Replications (for 2S-PA Methods).}\\
 \toprule
  &  & \multicolumn{2}{c}{2S-PA} & \multicolumn{2}{c}{2S-PA-Rel} & \multicolumn{2}{c}{2S-PA Corrected} & \multicolumn{2}{c}{2S-PA-Rel Corrected} \\
 \cmidrule(r){3-4} \cmidrule(r){5-6} \cmidrule(r){7-8} \cmidrule(r){9-10}
 $\textit{p}$ & \multicolumn{1}{c}{$\textit{N/p}$} & \multicolumn{1}{c}{$\rho = .70$} & \multicolumn{1}{c}{$\rho = .90$} & \multicolumn{1}{c}{$\rho = .70$} & \multicolumn{1}{c}{$\rho = .90$} & \multicolumn{1}{c}{$\rho = .70$} & \multicolumn{1}{c}{$\rho = .90$} & \multicolumn{1}{c}{$\rho = .70$} & \multicolumn{1}{c}{$\rho = .90$}\\
 \midrule
 \endfirsthead
-\caption*{\normalfont{Table \ref{tab:unnamed-chunk-2} continued}}\\
+\caption*{\normalfont{Table \ref{tab:MAD relative SE bias with outliers proportion (2SPA)} continued}}\\
 \toprule
  &  & \multicolumn{2}{c}{2S-PA} & \multicolumn{2}{c}{2S-PA-Rel} & \multicolumn{2}{c}{2S-PA Corrected} & \multicolumn{2}{c}{2S-PA-Rel Corrected} \\
 \cmidrule(r){3-4} \cmidrule(r){5-6} \cmidrule(r){7-8} \cmidrule(r){9-10}

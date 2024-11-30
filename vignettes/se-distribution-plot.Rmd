@@ -105,32 +105,8 @@ Standard error distributions are examined under conditions with small sample siz
 ## Condition 1: $\beta = 0$, $\textit{N}$ = 30, $\rho = 0.7$
 
 ```{r conditional data, include=FALSE}
-est <- cbind(est_list[[5]], est_list[[5]][c("tspa.est", "rel.est")])
-se <- cbind(se_list[[5]], se_corrected_list[[5]])
-```
-
-### Density plot of estimates distribution (Without removing outliers)
-
-```{r se density plot, echo=FALSE}
-# SE Density Plot
-par(mfrow = c(3, 3), mar = c(4, 4, 2, 1))
-for (i in 1:ncol(est)) {
-  emp_mean <- mean(est[[i]], na.rm = TRUE)
-  
-  plot(density(est[[i]], na.rm = TRUE), 
-       main = paste("Density Plot of SE -", colnames(est)[i]), 
-       xlab = "SE", 
-       col = "blue", 
-       lwd = 2,
-       xlim = c(-1, 1),  
-       # ylim = c(0, 20),
-       cex.main = 1)     
-  
-  axis(1, at = seq(0.1, 0.7, by = 0.1))
-  abline(v =  0.6, col = "red", lwd = 2, lty = 2)
-  abline(v =  emp_mean, col = "green", lwd = 2, lty = 2)
-}
-par(mfrow = c(1, 1))
+est <- cbind(est_list[[1]], est_list[[1]][c("tspa.est", "rel.est")])
+se <- cbind(se_list[[1]], se_corrected_list[[1]])
 ```
 
 ### Density plot of SE distribution (Without removing outliers)
@@ -174,7 +150,7 @@ par(mfrow = c(1, 1))
 
 ### Outlier proportions
 
-```{r Detect outliers}
+```{r Detect outliers, echo=FALSE}
 outlier_results <- lapply(se, detect_outliers, remove = TRUE)
 cleaned_se <- as.data.frame(lapply(outlier_results, `[[`, "cleaned_column"))
 outlier_percentages <- sapply(outlier_results, function(res) res$percentage)
@@ -225,6 +201,8 @@ for (i in 1:ncol(cleaned_se)) {
 # Reset plotting layout to default
 par(mfrow = c(1, 1))
 ```
+
+
 
 ## Condition 2: $\beta = 0.3$, $\textit{N}$ = 30, $\rho = 0.7$
 
@@ -326,14 +304,51 @@ for (i in 1:ncol(cleaned_se)) {
 par(mfrow = c(1, 1))
 ```
 
-## Condition 3: $\beta = 0.3$, $\textit{N}$ = 30, $\rho = 0.7$
 
-### Density plot of SE distribution (Without removing outliers)
+## Condition 3: $\beta = 0.6$, $\textit{N}$ = 30, $\rho = 0.7$
+
+### Density plot of estimates distribution
 
 ```{r conditional data 3}
 est <- cbind(est_list[[5]], est_list[[5]][c("tspa.est", "rel.est")])
 se <- cbind(se_list[[5]], se_corrected_list[[5]])
 ```
+
+```{r est density plot, echo=FALSE}
+# Estimates Density Plot
+# Setting up the plotting area for a 3x3 grid layout
+par(mfrow = c(3, 3), mar = c(4, 4, 2, 1))
+
+# Calculate density for each column to determine consistent y-axis limits
+density_list <- lapply(1:ncol(est), function(i) density(est[[i]], na.rm = TRUE))
+max_y <- max(sapply(density_list, function(d) max(d$y)))
+
+# Loop through each column of 'est' to create density plots
+for (i in 1:ncol(est)) {
+  emp_mean <- mean(est[[i]], na.rm = TRUE)
+  
+  # Plot the density for each column with a consistent y-axis limit
+  plot(density_list[[i]], 
+       main = paste("Density Plot of SE -", colnames(est)[i]), 
+       xlab = "SE", 
+       col = "blue", 
+       lwd = 2,
+       xlim = c(-1, 1),  
+       ylim = c(0, max_y),  # Consistent y-axis across all plots
+       cex.main = 1)     
+  
+  # Add a green dashed line at the empirical mean
+  abline(v = emp_mean, col = "green", lwd = 2, lty = 2)
+  
+  # Add a vertical reference line at zero
+  abline(v = 0.6, col = "red", lwd = 2, lty = 2)
+}
+
+# Reset the plotting area to a single plot
+par(mfrow = c(1, 1))
+```
+
+### Density plot of SE distribution (Without removing outliers)
 
 ```{r se density plot 3}
 # SE Density Plot
@@ -426,6 +441,49 @@ for (i in 1:ncol(cleaned_se)) {
 par(mfrow = c(1, 1))
 ```
 
+### Confidence intervals (Without removing outliers)
+
+```{r CI without outliers, echo=FALSE, message=FALSE, warning=FALSE}
+est <- est[1:300, ]
+se <- se[1:300, ]
+
+n_methods <- ncol(est)  # Number of methods
+for (i in 1:n_methods) {
+
+  estimates <- est[, i]
+  se_values <- se[, i]
+  
+  lower_bound <- estimates - 1.96 * se_values
+  upper_bound <- estimates + 1.96 * se_values
+  
+  data <- data.frame(
+    Replication = 1:300,
+    Estimate = estimates,
+    Lower = lower_bound,
+    Upper = upper_bound
+  )
+  
+  plot(
+    data$Replication, data$Estimate, 
+    pch = 16, col = "blue", ylim = c(-2, 2), 
+    xlab = "Replication", ylab = "Estimate", 
+    main = paste("Confidence Intervals -", colnames(est)[i]),
+    cex = 0.8
+  )
+  
+  arrows(
+    x0 = data$Replication, y0 = data$Lower,
+    x1 = data$Replication, y1 = data$Upper,
+    code = 3, angle = 90, length = 0.05, col = "black"
+  )
+  
+  abline(h = 0.6, col = "red", lty = 2, lwd = 2)
+}
+
+```
+
+\newpage
+
 The green line represents the mean of estimated standard errors, while the red line is the empirical standard deviation of path coefficients. The green line (mean standard error) is consistently positioned to the left of the red line (empirical standard deviation), indicating that the model underestimates the true standard error. 
 
 However, the magnitude of this underestimation varies between methods:
@@ -437,6 +495,7 @@ For shape and spread of density curves:
 
 - The density curves for joint.se, gsam.se, lsam.se, and tspa.se are relatively similar, with a peak around 0.2 to 0.3 and a sharp decline, indicating that these methods have similar distributions of standard errors.
 - The tspa.se_corrected and rel.se methods show a slightly broader spread, suggesting greater variability in the calculated standard errors.
+
 
 
 

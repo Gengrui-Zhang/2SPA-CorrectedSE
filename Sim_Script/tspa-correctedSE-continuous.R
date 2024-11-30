@@ -654,7 +654,7 @@ evaluate_res <- function (condition, results, fixed_objects = NULL) {
 
 # ========================================= Run Experiment ========================================= #
 
-res <- runSimulation(design = DESIGNFACTOR,
+res <- runSimulation(design = DESIGNFACTOR[c(1, 3, 5, 19, 21, 23, 37, 39, 41), ],
                      replications = 2000,
                      generate = generate_dat,
                      analyse = list(joint = analyze_joint,
@@ -666,7 +666,7 @@ res <- runSimulation(design = DESIGNFACTOR,
                      fixed_objects = FIXED_PARAMETER,
                      seed = rep(66330, nrow(DESIGNFACTOR)),
                      packages = "lavaan",
-                     filename = "CorrectedSE_11262024",
+                     filename = "CorrectedSE_11292024",
                      parallel = TRUE,
                      ncores = 30,
                      save = TRUE,

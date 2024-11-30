@@ -21,7 +21,7 @@ library(rlang)
 
 ```{r import data}
 # Read data
-dat_dir <- here("Sim_Data", "CorrectedSE_11112024_Raw")
+dat_dir <- here("Sim_Data", "CorrectedSE_11262024_Raw")
 
 # List all files matching the pattern
 files <- list.files(path = dat_dir, pattern = "results-row-.*\\.rds", full.names = TRUE)
@@ -60,11 +60,35 @@ extract_columns <- function(data, column_names, suffix) {
   data.frame(columns)
 }
 
+# Remove NA
 remove_na_columns <- function(df_list) {
   lapply(df_list, function(df) {
     # Remove columns with all NA values
     df[, colSums(is.na(df)) < nrow(df)]
   })
+}
+
+# Detect outliers
+detect_outliers <- function(column, remove = FALSE) {
+  Q1 <- quantile(column, 0.25, na.rm = TRUE)
+  Q3 <- quantile(column, 0.75, na.rm = TRUE)
+  IQR <- Q3 - Q1
+  lower_bound <- Q1 - 1.5 * IQR
+  upper_bound <- Q3 + 1.5 * IQR
+  outliers <- column[column < lower_bound | column > upper_bound]
+  percentage <- length(outliers) / sum(!is.na(column)) * 100
+  
+  if (remove) {
+    column <- ifelse(column < lower_bound | column > upper_bound, NA, column)
+  }
+  
+  list(
+    cleaned_column = column,  # Column after removing outliers if remove = TRUE
+    outliers = outliers,
+    percentage = percentage,
+    lower_bound = lower_bound,
+    upper_bound = upper_bound
+  )
 }
 ```
 
@@ -80,12 +104,38 @@ Standard error distributions are examined under conditions with small sample siz
 
 ## Condition 1: $\beta = 0$, $\textit{N}$ = 30, $\rho = 0.7$
 
-```{r conditional data}
-est <- cbind(est_list[[1]], est_list[[1]][c("tspa.est", "rel.est")])
-se <- cbind(se_list[[1]], se_corrected_list[[1]])
+```{r conditional data, include=FALSE}
+est <- cbind(est_list[[5]], est_list[[5]][c("tspa.est", "rel.est")])
+se <- cbind(se_list[[5]], se_corrected_list[[5]])
 ```
 
-```{r se density plot }
+### Density plot of estimates distribution (Without removing outliers)
+
+```{r se density plot, echo=FALSE}
+# SE Density Plot
+par(mfrow = c(3, 3), mar = c(4, 4, 2, 1))
+for (i in 1:ncol(est)) {
+  emp_mean <- mean(est[[i]], na.rm = TRUE)
+  
+  plot(density(est[[i]], na.rm = TRUE), 
+       main = paste("Density Plot of SE -", colnames(est)[i]), 
+       xlab = "SE", 
+       col = "blue", 
+       lwd = 2,
+       xlim = c(-1, 1),  
+       # ylim = c(0, 20),
+       cex.main = 1)     
+  
+  axis(1, at = seq(0.1, 0.7, by = 0.1))
+  abline(v =  0.6, col = "red", lwd = 2, lty = 2)
+  abline(v =  emp_mean, col = "green", lwd = 2, lty = 2)
+}
+par(mfrow = c(1, 1))
+```
+
+### Density plot of SE distribution (Without removing outliers)
+
+```{r se density plot, echo=FALSE}
 # SE Density Plot
 par(mfrow = c(3, 3), mar = c(4, 4, 2, 1))
 for (i in 1:ncol(se)) {
@@ -97,15 +147,282 @@ for (i in 1:ncol(se)) {
        xlab = "SE", 
        col = "blue", 
        lwd = 2,
-       xlim = c(0.1, 0.7),  
-       ylim = c(1, 20),
-       cex.main = 0.8)     
+       cex.main = 1)     
   
   axis(1, at = seq(0.1, 0.7, by = 0.1))
   
   abline(v = emp_sd, col = "red", lwd = 2, lty = 2)
   abline(v = mean_se, col = "green", lwd = 2, lty = 2)
 }
+par(mfrow = c(1, 1))
+```
+
+### Boxplot of SE values
+
+```{r boxplot, echo=FALSE}
+par(mfrow = c(3, 3), mar = c(4, 4, 2, 1))
+for (i in 1:ncol(se)) {
+  boxplot(se[[i]], 
+          main = paste("Boxplot of SE -", colnames(se)[i]), 
+          ylab = "SE", 
+          col = "lightgreen",
+          ylim = c(0, 0.25))
+ points(1, mean_se, col = "red", pch = 18, cex = 1.5)
+}
+par(mfrow = c(1, 1))
+```
+
+### Outlier proportions
+
+```{r Detect outliers}
+outlier_results <- lapply(se, detect_outliers, remove = TRUE)
+cleaned_se <- as.data.frame(lapply(outlier_results, `[[`, "cleaned_column"))
+outlier_percentages <- sapply(outlier_results, function(res) res$percentage)
+outlier_table <- data.frame(
+  Method = names(outlier_results),
+  Outlier_Percentage = sapply(outlier_results, function(res) res$percentage)
+)
+print(outlier_table)
+```
+
+### Density plot of SE distribution (Removed outliers)
+
+```{r trimmed density plot, echo=FALSE}
+# Set up a 3x3 layout for plotting multiple density plots
+par(mfrow = c(3, 3), mar = c(4, 4, 2, 1))  # Adjust layout and margins
+
+for (i in 1:ncol(cleaned_se)) {
+  emp_sd <- sd(est[[i]], na.rm = TRUE)  # Calculate empirical standard deviation
+  mean_se <- mean(cleaned_se[[i]], na.rm = TRUE)  # Calculate the mean of SE
+  
+  # Plot the density
+  plot(
+    density(cleaned_se[[i]], na.rm = TRUE), 
+    main = paste("Density Plot of SE -", colnames(cleaned_se)[i]), 
+    xlab = "SE", 
+    col = "blue", 
+    lwd = 2,
+    xlim = c(0.15, 0.3),  
+    ylim = c(0, 20),
+    cex.main = 1,  # Slightly larger title font size
+    cex.lab = 1.1,   # Increase axis label size
+    cex.axis = 0.9   # Slightly smaller axis tick font size
+  )
+  
+  # Add a custom x-axis with formatted tick labels
+  axis(
+    1, 
+    at = seq(0.15, 0.3, by = 0.05), 
+    labels = sprintf("%.2f", seq(0.15, 0.3, by = 0.05)), 
+    cex.axis = 0.9
+  )
+  
+  # Add vertical lines for empirical SD and mean
+  abline(v = emp_sd, col = "red", lwd = 2, lty = 2)  # Red dashed line for SD
+  abline(v = mean_se, col = "green", lwd = 2, lty = 2)  # Green dashed line for mean
+}
+
+# Reset plotting layout to default
+par(mfrow = c(1, 1))
+```
+
+## Condition 2: $\beta = 0.3$, $\textit{N}$ = 30, $\rho = 0.7$
+
+### Density plot of SE distribution (Without removing outliers)
+
+```{r conditional data 2}
+est <- cbind(est_list[[3]], est_list[[3]][c("tspa.est", "rel.est")])
+se <- cbind(se_list[[3]], se_corrected_list[[3]])
+```
+
+```{r se density plot 2}
+# SE Density Plot
+par(mfrow = c(3, 3), mar = c(4, 4, 2, 1))
+for (i in 1:ncol(se)) {
+  emp_sd <- sd(est[[i]], na.rm = TRUE)
+  mean_se <- mean(se[[i]], na.rm = TRUE)  # Calculate the mean
+
+  plot(density(se[[i]], na.rm = TRUE), 
+       main = paste("Density Plot of SE -", colnames(se)[i]), 
+       xlab = "SE", 
+       col = "blue", 
+       lwd = 2,
+       cex.main = 1)     
+  
+  axis(1, at = seq(0.1, 0.7, by = 0.1))
+  
+  abline(v = emp_sd, col = "red", lwd = 2, lty = 2)
+  abline(v = mean_se, col = "green", lwd = 2, lty = 2)
+}
+par(mfrow = c(1, 1))
+```
+
+### Boxplot of SE values
+
+```{r boxplot 2, echo=FALSE}
+par(mfrow = c(3, 3), mar = c(4, 4, 2, 1))
+for (i in 1:ncol(se)) {
+  boxplot(se[[i]], 
+          main = paste("Boxplot of SE -", colnames(se)[i]), 
+          ylab = "SE", 
+          col = "lightgreen",
+          ylim = c(0, 0.25))
+ points(1, mean_se, col = "red", pch = 18, cex = 1.5)
+}
+par(mfrow = c(1, 1))
+```
+
+### Outlier proportions
+
+```{r Detect outliers 2}
+outlier_results <- lapply(se, detect_outliers, remove = TRUE)
+cleaned_se <- as.data.frame(lapply(outlier_results, `[[`, "cleaned_column"))
+outlier_percentages <- sapply(outlier_results, function(res) res$percentage)
+outlier_table <- data.frame(
+  Method = names(outlier_results),
+  Outlier_Percentage = sapply(outlier_results, function(res) res$percentage)
+)
+print(outlier_table)
+```
+
+### Density plot of SE distribution (Removed outliers)
+
+```{r trimmed density plot 2, echo=FALSE}
+# Set up a 3x3 layout for plotting multiple density plots
+par(mfrow = c(3, 3), mar = c(4, 4, 2, 1))  # Adjust layout and margins
+
+for (i in 1:ncol(cleaned_se)) {
+  emp_sd <- sd(est[[i]], na.rm = TRUE)  # Calculate empirical standard deviation
+  mean_se <- mean(cleaned_se[[i]], na.rm = TRUE)  # Calculate the mean of SE
+  
+  # Plot the density
+  plot(
+    density(cleaned_se[[i]], na.rm = TRUE), 
+    main = paste("Density Plot of SE -", colnames(cleaned_se)[i]), 
+    xlab = "SE", 
+    col = "blue", 
+    lwd = 2,
+    xlim = c(0.15, 0.4),  
+    ylim = c(0, 20),
+    cex.main = 1,  # Slightly larger title font size
+    cex.lab = 1.1,   # Increase axis label size
+    cex.axis = 0.9   # Slightly smaller axis tick font size
+  )
+  
+  # Add a custom x-axis with formatted tick labels
+  axis(
+    1, 
+    at = seq(0.15, 0.3, by = 0.05), 
+    labels = sprintf("%.2f", seq(0.15, 0.3, by = 0.05)), 
+    cex.axis = 0.9
+  )
+  
+  # Add vertical lines for empirical SD and mean
+  abline(v = emp_sd, col = "red", lwd = 2, lty = 2)  # Red dashed line for SD
+  abline(v = mean_se, col = "green", lwd = 2, lty = 2)  # Green dashed line for mean
+}
+
+# Reset plotting layout to default
+par(mfrow = c(1, 1))
+```
+
+## Condition 3: $\beta = 0.3$, $\textit{N}$ = 30, $\rho = 0.7$
+
+### Density plot of SE distribution (Without removing outliers)
+
+```{r conditional data 3}
+est <- cbind(est_list[[5]], est_list[[5]][c("tspa.est", "rel.est")])
+se <- cbind(se_list[[5]], se_corrected_list[[5]])
+```
+
+```{r se density plot 3}
+# SE Density Plot
+par(mfrow = c(3, 3), mar = c(4, 4, 2, 1))
+for (i in 1:ncol(se)) {
+  emp_sd <- sd(est[[i]], na.rm = TRUE)
+  mean_se <- mean(se[[i]], na.rm = TRUE)  # Calculate the mean
+
+  plot(density(se[[i]], na.rm = TRUE), 
+       main = paste("Density Plot of SE -", colnames(se)[i]), 
+       xlab = "SE", 
+       col = "blue", 
+       lwd = 2,
+       cex.main = 1)     
+  
+  axis(1, at = seq(0.1, 0.7, by = 0.1))
+  
+  abline(v = emp_sd, col = "red", lwd = 2, lty = 2)
+  abline(v = mean_se, col = "green", lwd = 2, lty = 2)
+}
+par(mfrow = c(1, 1))
+```
+
+### Boxplot of SE values
+
+```{r boxplot 3, echo=FALSE}
+par(mfrow = c(3, 3), mar = c(4, 4, 2, 1))
+for (i in 1:ncol(se)) {
+  boxplot(se[[i]], 
+          main = paste("Boxplot of SE -", colnames(se)[i]), 
+          ylab = "SE", 
+          col = "lightgreen",
+          ylim = c(0, 0.25))
+ points(1, mean_se, col = "red", pch = 18, cex = 1.5)
+}
+par(mfrow = c(1, 1))
+```
+
+### Outlier proportions
+
+```{r Detect outliers 3}
+outlier_results <- lapply(se, detect_outliers, remove = TRUE)
+cleaned_se <- as.data.frame(lapply(outlier_results, `[[`, "cleaned_column"))
+outlier_percentages <- sapply(outlier_results, function(res) res$percentage)
+outlier_table <- data.frame(
+  Method = names(outlier_results),
+  Outlier_Percentage = sapply(outlier_results, function(res) res$percentage)
+)
+print(outlier_table)
+```
+
+### Density plot of SE distribution (Removed outliers)
+
+```{r trimmed density plot 3, echo=FALSE}
+# Set up a 3x3 layout for plotting multiple density plots
+par(mfrow = c(3, 3), mar = c(4, 4, 2, 1))  # Adjust layout and margins
+
+for (i in 1:ncol(cleaned_se)) {
+  emp_sd <- sd(est[[i]], na.rm = TRUE)  # Calculate empirical standard deviation
+  mean_se <- mean(cleaned_se[[i]], na.rm = TRUE)  # Calculate the mean of SE
+  
+  # Plot the density
+  plot(
+    density(cleaned_se[[i]], na.rm = TRUE), 
+    main = paste("Density Plot of SE -", colnames(cleaned_se)[i]), 
+    xlab = "SE", 
+    col = "blue", 
+    lwd = 2,
+    xlim = c(0, 0.4),  
+    ylim = c(0, 20),
+    cex.main = 1,  # Slightly larger title font size
+    cex.lab = 1.1,   # Increase axis label size
+    cex.axis = 0.9   # Slightly smaller axis tick font size
+  )
+  
+  # Add a custom x-axis with formatted tick labels
+  axis(
+    1, 
+    at = seq(0.15, 0.3, by = 0.05), 
+    labels = sprintf("%.2f", seq(0.15, 0.3, by = 0.05)), 
+    cex.axis = 0.9
+  )
+  
+  # Add vertical lines for empirical SD and mean
+  abline(v = emp_sd, col = "red", lwd = 2, lty = 2)  # Red dashed line for SD
+  abline(v = mean_se, col = "green", lwd = 2, lty = 2)  # Green dashed line for mean
+}
+
+# Reset plotting layout to default
 par(mfrow = c(1, 1))
 ```
 
@@ -119,7 +436,9 @@ However, the magnitude of this underestimation varies between methods:
 For shape and spread of density curves:
 
 - The density curves for joint.se, gsam.se, lsam.se, and tspa.se are relatively similar, with a peak around 0.2 to 0.3 and a sharp decline, indicating that these methods have similar distributions of standard errors.
-- The tspa.se_corrected and rel.se methods show a slightly broader spread, suggesting greater variability in the calculated standard errors. This could imply that
+- The tspa.se_corrected and rel.se methods show a slightly broader spread, suggesting greater variability in the calculated standard errors.
+
+
 
 
 

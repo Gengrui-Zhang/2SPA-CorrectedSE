@@ -56,7 +56,7 @@ knitr::opts_chunk$set(cache.extra = knitr::rand_seed)
 ```
 
 ```{r message=FALSE, warning=FALSE}
-sim <- readRDS(here("Sim_Data", "CorrectedSE_11112024.rds"))
+sim <- readRDS(here("Sim_Data", "CorrectedSE_11262024.rds"))
 sim_results <- sim %>% 
   dplyr::select(-c(REPLICATIONS:COMPLETED)) %>%
   mutate(across(where(is.numeric), round, 4)) %>%

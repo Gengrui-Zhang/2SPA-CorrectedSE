@@ -1,5 +1,6 @@
 library(lavaan)
 library(SimDesign)
+library(cmdstanr)
 library(dplyr)
 library(here)
 
@@ -29,7 +30,8 @@ FIXED_PARAMETER <- list(
               # constraints
               ev2 == ep2 * lx^2
               1 == beta^2 + dvy
-              ev1 == ep1 * ly^2"
+              ev1 == ep1 * ly^2",
+  `btspa_mod` = cmdstan_model(here("Sim_Script", "2spa_bayes_bartlett.stan"))
 )
 
 # ========================================= Data Generation ========================================= #
@@ -146,6 +148,17 @@ syntax_update <- function(n_items, path_include = TRUE) {
     lavaan_syntax <- paste0(lavaan_syntax, "\nfy ~ fx")
   }
   return(lavaan_syntax)
+}
+
+# Helper Function 6
+ExtractStan <- function(fit, par = "beta1") {
+  out <- fit$summary(par,
+                     est = "mean", se = "sd",
+                     ~ quantile(.x, probs = c(.025, .975)),
+                     "rhat"
+  )
+  names(out)[4:5] <- c("ll", "ul")
+  out
 }
 
 # ====== Analyses Function ========= #
@@ -383,6 +396,70 @@ analyze_rel <- function(condition, dat, fixed_objects) {
                tspa2_est[["est.std"]], sqrt(vc_corrected3[1, 1]), 
                local_warning_counter, converge)
       names(out) <- c("est", "se", "est_corrected", "se_corrected", 
+                      "warnings_count", "convergence")
+      
+      # Check if any NA exists in the output
+      if (anyNA(out)) {
+        stop("The model did not obtain SE")
+      }
+      return(out)
+    },
+    warning = function(w) {
+      # Increment the local warning counter
+      local_warning_counter <<- local_warning_counter + 1
+    }
+  )
+  
+  return(result)
+}
+
+# Bayesian 2S-PA Model
+analyze_btspa <- function(condition, dat, fixed_objects) {
+  
+  # Initialize a local warning counter for this replication
+  local_warning_counter <- 0
+  
+  # Fit the model and capture warnings
+  result <- withCallingHandlers(
+    {
+      # Extract Model
+      cfa_mod <- syntax_update(condition$n_items, path_include = FALSE)
+      btspa_mod <- FIXED_PARAMETER$btspa_mod
+    
+      # Get Factor Score
+      fs <- get_fs(dat, 
+                   model = cfa_mod,
+                   method = "Bartlett", 
+                   vfsLT = TRUE)
+      
+      # Data list
+      data_list <- list(
+        N = nrow(dat),
+        fs_fx = fs$fs_fx,
+        fs_fx_se = fs$fs_fx_se,
+        fs_fy = fs$fs_fy,
+        fs_fy_se = fs$fs_fy_se
+      )
+      
+      # Fit Model
+      b2spa <- btspa_mod$sample(data = data_list,
+                                chains = 4, 
+                                iter_sampling = 2000)
+      b2spa_est <- ExtractStan(b2spa, par = "beta1")
+      
+      if (b2spa_est$rhat <= 1.01) {
+        converge <- 1
+        b2spa_est <- b2spa_est[2:5]
+      } else {
+        converge <- 0
+        stop(paste("Convergence not achieved: rhat =", b2spa_est$rhat, ". It should be less than 1.01."))
+      }
+      
+      # Extract Parameter
+      out <- c(b2spa_est[["est"]], b2spa_est[["se"]],
+               local_warning_counter,
+               converge)
+      names(out) <- c("est", "se",
                       "warnings_count", "convergence")
       
       # Check if any NA exists in the output

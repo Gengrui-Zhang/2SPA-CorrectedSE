@@ -3,10 +3,11 @@ library(SimDesign)
 library(cmdstanr)
 library(dplyr)
 library(here)
+library(R2spa)
 
 # Source Function
-r_scripts <- list.files(here("R"), pattern = "\\.R$", full.names = TRUE)
-lapply(r_scripts, source)
+# r_scripts <- list.files(here("R"), pattern = "\\.R$", full.names = TRUE)
+# lapply(r_scripts, source)
 
 # ========================================= Simulation Conditions ========================================= #
 
@@ -151,7 +152,7 @@ syntax_update <- function(n_items, path_include = TRUE) {
 }
 
 # Helper Function 6
-ExtractStan <- function(fit, par = "beta1") {
+ExtractStan <- function(fit, par = "std_beta1") {
   out <- fit$summary(par,
                      est = "mean", se = "sd",
                      ~ quantile(.x, probs = c(.025, .975)),
@@ -444,16 +445,16 @@ analyze_btspa <- function(condition, dat, fixed_objects) {
       data_list <- list(
         N = nrow(dat),
         fs_fx = fs$fs_fx,
-        fs_fx_se = fs$fs_fx_se,
+        fs_fx_se = fs$fs_fx_se[1],
         fs_fy = fs$fs_fy,
-        fs_fy_se = fs$fs_fy_se
+        fs_fy_se = fs$fs_fy_se[1]
       )
       
       # Fit Model
       b2spa <- btspa_mod$sample(data = data_list,
                                 chains = 4, 
                                 iter_sampling = 2000)
-      b2spa_est <- ExtractStan(b2spa, par = "beta1")
+      b2spa_est <- ExtractStan(b2spa, par = "std_beta1")
       
       if (b2spa_est$rhat <= 1.01) {
         converge <- 1
@@ -662,24 +663,24 @@ evaluate_res <- function (condition, results, fixed_objects = NULL) {
 
 # ========================================= Run Experiment ========================================= #
 
-res <- runSimulation(design = DESIGNFACTOR,
-                     replications = 2000,
-                     generate = generate_dat,
-                     analyse = list(joint = analyze_joint,
-                                    gsam = analyze_gsam,
-                                    lsam = analyze_lsam,
-                                    tspa = analyze_tspa,
-                                    rel = analyze_rel,
-                                    btspa = analyze_btspa),
-                     summarise = evaluate_res,
-                     fixed_objects = FIXED_PARAMETER,
-                     seed = rep(66330, nrow(DESIGNFACTOR)),
-                     packages = "lavaan",
-                     filename = "CorrectedSE_12012024",
-                     parallel = TRUE,
-                     ncores = 30,
-                     save = TRUE,
-                     save_results = TRUE)
+# res <- runSimulation(design = DESIGNFACTOR,
+#                      replications = 2000,
+#                      generate = generate_dat,
+#                      analyse = list(joint = analyze_joint,
+#                                     gsam = analyze_gsam,
+#                                     lsam = analyze_lsam,
+#                                     tspa = analyze_tspa,
+#                                     rel = analyze_rel,
+#                                     btspa = analyze_btspa),
+#                      summarise = evaluate_res,
+#                      fixed_objects = FIXED_PARAMETER,
+#                      seed = rep(66330, nrow(DESIGNFACTOR)),
+#                      packages = "lavaan",
+#                      filename = "CorrectedSE_12012024",
+#                      parallel = TRUE,
+#                      ncores = 30,
+#                      save = TRUE,
+#                      save_results = TRUE)
 
 # runSimulation(design = DESIGNFACTOR[1:2, ],
 #               replications = 5,

@@ -176,7 +176,9 @@ analyze_joint <- function(condition, dat, fixed_objects) {
       joint_mod <- syntax_update(condition$n_items, path_include = TRUE)
       
       # Fit Model
-      mjoint <- sem(joint_mod, data = dat)
+      mjoint <- sem(joint_mod, 
+                    data = dat,
+                    bounds = "wide.zerovar")
       mjoint_est <- standardizedSolution(mjoint)
       joint_est <-  mjoint_est %>%
         filter(lhs == "fy", op == "~", rhs == "fx")
@@ -216,7 +218,10 @@ analyze_gsam <- function(condition, dat, fixed_objects) {
       joint_mod <- syntax_update(condition$n_items, path_include = TRUE)
       
       # Fit Model
-      mgsam <- sam(joint_mod, data = dat, sam.method = "global")
+      mgsam <- sam(joint_mod, 
+                   data = dat, 
+                   sam.method = "global",
+                   mm.args = list(std.lv = TRUE))
       mgsam_est <- standardizedSolution(mgsam)
       gsam_est <-  mgsam_est %>%
         filter(lhs == "fy", op == "~", rhs == "fx")
@@ -256,7 +261,10 @@ analyze_lsam <- function(condition, dat, fixed_objects) {
       joint_mod <- syntax_update(condition$n_items, path_include = TRUE)
       
       # Fit Model
-      mlsam <- sam(joint_mod, data = dat)
+      mlsam <- sam(joint_mod, 
+                   data = dat,
+                   sam.method = "local",
+                   mm.args = list(std.lv = TRUE))
       mlsam_est <- standardizedSolution(mlsam)
       lsam_est <-  mlsam_est %>%
         filter(lhs == "fy", op == "~", rhs == "fx")
@@ -299,7 +307,7 @@ analyze_tspa <- function(condition, dat, fixed_objects) {
       cfa_fit <- cfa(cfa_mod,
                      std.lv = TRUE, 
                      data = dat,
-                     bounds = "pos.ov.var")
+                     bounds = "wide.zerovar")
       
       fs <- get_fs_lavaan(cfa_fit, method = "Bartlett", vfsLT = TRUE)
       
@@ -365,7 +373,7 @@ analyze_rel <- function(condition, dat, fixed_objects) {
       cfa_fit <- cfa(cfa_mod,
                      std.lv = TRUE, 
                      data = dat,
-                     bounds = "pos.ov.var"
+                     bounds = "wide.zerovar"
       )
       fs <- get_fs_lavaan(cfa_fit, method = "Bartlett", vfsLT = TRUE)
       
@@ -425,7 +433,7 @@ analyze_btspa <- function(condition, dat, fixed_objects) {
       # Extract Model
       cfa_mod <- syntax_update(condition$n_items, path_include = FALSE)
       btspa_mod <- FIXED_PARAMETER$btspa_mod
-    
+      
       # Get Factor Score
       fs <- get_fs(dat, 
                    model = cfa_mod,
@@ -558,7 +566,7 @@ ci_stats <- function(est, se, par, stats_type) {
   for (i in seq_len(ncol(est))) {
     ci_est[[i]] <- cbind(lo_95[,i], up_95[,i])
   }
-
+  
   # Determine which statistic to calculate
   if (stats_type == "Coverage") {
     return(sapply(ci_est, function(ci) mean(ci[,1] <= par & ci[,2] >= par)))
@@ -573,7 +581,7 @@ ci_stats <- function(est, se, par, stats_type) {
 
 # Evaluation Function
 evaluate_res <- function (condition, results, fixed_objects = NULL) {
-
+  
   # Population parameter
   pop_par <- condition$path
   
@@ -586,23 +594,23 @@ evaluate_res <- function (condition, results, fixed_objects = NULL) {
   # Convergence and Warning
   convergences <- results[, grep(".convergence$", colnames(results))]
   warnings <- results[, grep(".warnings_count$", colnames(results))]
-
+  
   c(rbias = robust_bias(est,
-                     se,
-                     pop_par,
-                     type = "raw"),
+                        se,
+                        pop_par,
+                        type = "raw"),
     rbias_corrected = robust_bias(est_corrected,
-                               se_corrected,
-                               pop_par,
-                               type = "raw"),
+                                  se_corrected,
+                                  pop_par,
+                                  type = "raw"),
     sbias = robust_bias(est,
-                     se,
-                     pop_par,
-                     type = "standardized"),
+                        se,
+                        pop_par,
+                        type = "standardized"),
     sbias_corrected = robust_bias(est_corrected,
-                               se_corrected,
-                               pop_par,
-                               type = "standardized"),
+                                  se_corrected,
+                                  pop_par,
+                                  type = "standardized"),
     mean_se = colMeans(se, na.rm = TRUE),
     mean_se_corrected = colMeans(se_corrected, na.rm = TRUE),
     raw_rsb = rse_bias(est,
@@ -615,8 +623,8 @@ evaluate_res <- function (condition, results, fixed_objects = NULL) {
                           se,
                           type = "median"),
     stdMed_rsb_corrected = rse_bias(est_corrected,
-                               se_corrected,
-                               type = "median"),
+                                    se_corrected,
+                                    type = "median"),
     out_se = outlier_se(se),
     out_se_corrected = outlier_se(se_corrected),
     coverage = ci_stats(est,
@@ -654,7 +662,7 @@ evaluate_res <- function (condition, results, fixed_objects = NULL) {
 
 # ========================================= Run Experiment ========================================= #
 
-res <- runSimulation(design = DESIGNFACTOR[c(1, 3, 5, 19, 21, 23, 37, 39, 41), ],
+res <- runSimulation(design = DESIGNFACTOR,
                      replications = 2000,
                      generate = generate_dat,
                      analyse = list(joint = analyze_joint,
@@ -665,9 +673,9 @@ res <- runSimulation(design = DESIGNFACTOR[c(1, 3, 5, 19, 21, 23, 37, 39, 41), ]
                                     btspa = analyze_btspa),
                      summarise = evaluate_res,
                      fixed_objects = FIXED_PARAMETER,
-                     seed = rep(66330, nrow(DESIGNFACTOR[c(1, 3, 5, 19, 21, 23, 37, 39, 41), ])),
+                     seed = rep(66330, nrow(DESIGNFACTOR)),
                      packages = "lavaan",
-                     filename = "CorrectedSE_11292024",
+                     filename = "CorrectedSE_12012024",
                      parallel = TRUE,
                      ncores = 30,
                      save = TRUE,

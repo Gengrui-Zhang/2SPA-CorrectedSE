@@ -222,7 +222,7 @@ analyze_gsam <- function(condition, dat, fixed_objects) {
       mgsam <- sam(joint_mod, 
                    data = dat, 
                    sam.method = "global",
-                   mm.args = list(std.lv = TRUE))
+                   mm.args = list(std.lv = TRUE, bounds = "wide.zerovar"))
       mgsam_est <- standardizedSolution(mgsam)
       gsam_est <-  mgsam_est %>%
         filter(lhs == "fy", op == "~", rhs == "fx")
@@ -265,7 +265,7 @@ analyze_lsam <- function(condition, dat, fixed_objects) {
       mlsam <- sam(joint_mod, 
                    data = dat,
                    sam.method = "local",
-                   mm.args = list(std.lv = TRUE))
+                   mm.args = list(std.lv = TRUE, bounds = "wide.zerovar"))
       mlsam_est <- standardizedSolution(mlsam)
       lsam_est <-  mlsam_est %>%
         filter(lhs == "fy", op == "~", rhs == "fx")

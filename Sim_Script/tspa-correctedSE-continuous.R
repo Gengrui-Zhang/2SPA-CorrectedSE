@@ -461,7 +461,7 @@ analyze_btspa <- function(condition, dat, fixed_objects) {
         b2spa_est <- b2spa_est[2:5]
       } else {
         converge <- 0
-        stop(paste("Convergence not achieved: rhat =", b2spa_est$rhat, ". It should be less than 1.01."))
+        # stop(paste("Convergence not achieved: rhat =", b2spa_est$rhat, ". It should be less than 1.01."))
       }
       
       # Extract Parameter
@@ -663,24 +663,24 @@ evaluate_res <- function (condition, results, fixed_objects = NULL) {
 
 # ========================================= Run Experiment ========================================= #
 
-# res <- runSimulation(design = DESIGNFACTOR,
-#                      replications = 2000,
-#                      generate = generate_dat,
-#                      analyse = list(joint = analyze_joint,
-#                                     gsam = analyze_gsam,
-#                                     lsam = analyze_lsam,
-#                                     tspa = analyze_tspa,
-#                                     rel = analyze_rel,
-#                                     btspa = analyze_btspa),
-#                      summarise = evaluate_res,
-#                      fixed_objects = FIXED_PARAMETER,
-#                      seed = rep(66330, nrow(DESIGNFACTOR)),
-#                      packages = "lavaan",
-#                      filename = "CorrectedSE_12012024",
-#                      parallel = TRUE,
-#                      ncores = 30,
-#                      save = TRUE,
-#                      save_results = TRUE)
+res <- runSimulation(design = DESIGNFACTOR[c(1,3,5,19,21,23,37,39,41), ],
+                     replications = 2000,
+                     generate = generate_dat,
+                     analyse = list(joint = analyze_joint,
+                                    gsam = analyze_gsam,
+                                    lsam = analyze_lsam,
+                                    tspa = analyze_tspa,
+                                    rel = analyze_rel,
+                                    btspa = analyze_btspa),
+                     summarise = evaluate_res,
+                     fixed_objects = FIXED_PARAMETER,
+                     seed = rep(66330, nrow(DESIGNFACTOR[c(1,3,5,19,21,23,37,39,41), ])),
+                     packages = "lavaan",
+                     filename = "CorrectedSE_01212025",
+                     parallel = TRUE,
+                     ncores = 4,
+                     save = TRUE,
+                     save_results = TRUE)
 
 # runSimulation(design = DESIGNFACTOR[1:2, ],
 #               replications = 5,
